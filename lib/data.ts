@@ -2,11 +2,11 @@
  * Data fetching utilities for dashboard
  */
 
-import { get } from '@vercel/blob';
+import { list } from '@vercel/blob';
 import { DashboardData } from '@/types/dashboard';
 import { unstable_cache } from 'next/cache';
 
-const BLOB_URL = 'dashboard-data.json';
+const BLOB_NAME = 'dashboard-data.json';
 
 /**
  * Fetch dashboard data from Vercel Blob Storage
@@ -15,12 +15,17 @@ const BLOB_URL = 'dashboard-data.json';
 export const getDashboardData = unstable_cache(
   async (): Promise<DashboardData> => {
     try {
-      // Get the blob
-      const blob = await get(BLOB_URL);
+      // List blobs and find our dashboard data file
+      const { blobs } = await list({
+        prefix: BLOB_NAME,
+        limit: 1,
+      });
 
-      if (!blob) {
+      if (!blobs || blobs.length === 0) {
         throw new Error('Dashboard data not found in blob storage');
       }
+
+      const blob = blobs[0];
 
       // Download and parse JSON
       const response = await fetch(blob.url);

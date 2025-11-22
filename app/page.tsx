@@ -8,7 +8,6 @@ import { TempGaugeCard } from '@/components/temp-gauge-card';
 import { OvenStatusBadge } from '@/components/oven-status-badge';
 import { FireStatsTable } from '@/components/fire-stats-table';
 import { MonthlyStatsCard } from '@/components/monthly-stats-card';
-import { Card, Grid, Title, Text, Metric } from '@tremor/react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 
@@ -31,10 +30,10 @@ export default async function Home() {
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">
             🔥 KOKOMO Heating Dashboard
           </h1>
-          <Text>Live-Daten aus der CMI JSON API</Text>
-          <Text className="text-sm text-slate-500">
+          <p className="text-slate-600 dark:text-slate-400">Live-Daten aus der CMI JSON API</p>
+          <p className="text-sm text-slate-500">
             Letztes Update: {format(new Date(data.last_updated), 'dd.MM.yyyy - HH:mm', { locale: de })}
-          </Text>
+          </p>
         </div>
 
         {/* Status and Overview */}
@@ -43,32 +42,32 @@ export default async function Home() {
         </div>
 
         {/* Key Metrics */}
-        <Grid numItemsSm={2} numItemsLg={3} className="gap-4">
-          <Card>
-            <Text>Gesamt Feuer-Events</Text>
-            <Metric>{totalEvents}</Metric>
-          </Card>
-          <Card>
-            <Text>Dieser Monat</Text>
-            <Metric>{currentMonthStats?.count ?? 0}</Metric>
-          </Card>
-          <Card>
-            <Text>Ø pro Monat</Text>
-            <Metric>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
+            <p className="text-sm text-slate-600 dark:text-slate-400">Gesamt Feuer-Events</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">{totalEvents}</p>
+          </div>
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
+            <p className="text-sm text-slate-600 dark:text-slate-400">Dieser Monat</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">{currentMonthStats?.count ?? 0}</p>
+          </div>
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
+            <p className="text-sm text-slate-600 dark:text-slate-400">Ø pro Monat</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">
               {data.monthly_stats.length > 0
                 ? (
                     data.monthly_stats.reduce((sum, stat) => sum + stat.count, 0) /
                     data.monthly_stats.length
                   ).toFixed(1)
                 : '0'}
-            </Metric>
-          </Card>
-        </Grid>
+            </p>
+          </div>
+        </div>
 
         {/* Temperature Gauges */}
         <div>
-          <Title className="mb-4">🌡️ Temperaturen</Title>
-          <Grid numItemsSm={2} numItemsLg={3} className="gap-4">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-4">🌡️ Temperaturen</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {data.current_temps
               .filter((temp) => temp.nummer >= 1 && temp.nummer <= 6)
               .sort((a, b) => a.nummer - b.nummer)
@@ -79,12 +78,12 @@ export default async function Home() {
                   isOven={temp.nummer === 4}
                 />
               ))}
-          </Grid>
+          </div>
         </div>
 
         {/* Fire Statistics */}
         <div>
-          <Title className="mb-4">🔥 Feuer-Statistik</Title>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-4">🔥 Feuer-Statistik</h2>
           <div className="space-y-6">
             <FireStatsTable events={data.fire_events} limit={10} />
             <MonthlyStatsCard stats={data.monthly_stats} />
@@ -93,9 +92,7 @@ export default async function Home() {
 
         {/* Footer */}
         <div className="text-center text-sm text-slate-500 dark:text-slate-400 pt-8">
-          <Text>
-            Daten werden stündlich vom Raspberry Pi aktualisiert
-          </Text>
+          <p>Daten werden stündlich vom Raspberry Pi aktualisiert</p>
         </div>
       </div>
     </div>

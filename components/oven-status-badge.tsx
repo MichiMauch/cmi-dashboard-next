@@ -3,7 +3,6 @@
  * Displays the current oven state
  */
 
-import { Badge } from '@tremor/react';
 import { OvenState } from '@/types/dashboard';
 
 interface OvenStatusBadgeProps {
@@ -11,10 +10,10 @@ interface OvenStatusBadgeProps {
 }
 
 const STATE_CONFIG = {
-  cold: { label: '❄️ KALT', color: 'blue' as const },
-  warming: { label: '📈 AUFWÄRMEN', color: 'yellow' as const },
-  hot: { label: '🔥 HEISS', color: 'orange' as const },
-  cooling: { label: '📉 ABKÜHLEN', color: 'green' as const },
+  cold: { label: '❄️ KALT', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
+  warming: { label: '📈 AUFWÄRMEN', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
+  hot: { label: '🔥 HEISS', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
+  cooling: { label: '📉 ABKÜHLEN', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
 };
 
 export function OvenStatusBadge({ state }: OvenStatusBadgeProps) {
@@ -23,9 +22,9 @@ export function OvenStatusBadge({ state }: OvenStatusBadgeProps) {
   return (
     <div className="flex items-center space-x-2">
       <span className="text-sm text-slate-600 dark:text-slate-400">Ofen Status:</span>
-      <Badge size="lg" color={config.color}>
+      <span className={`px-3 py-1 text-sm font-semibold rounded-full ${config.color}`}>
         {config.label}
-      </Badge>
+      </span>
     </div>
   );
 }
