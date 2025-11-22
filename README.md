@@ -1,36 +1,144 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🔥 KOKOMO Heating Dashboard
 
-## Getting Started
+Next.js 16 Dashboard zur Visualisierung von Holzofen-Daten aus der CMI JSON API.
 
-First, run the development server:
+## Features
+
+- 🌡️ Live-Temperaturanzeigen mit Gauge-Charts (Tremor UI)
+- 🔥 Feuer-Event Tracking und Statistiken
+- 📊 Monatliche Auswertungen mit Charts
+- 📱 Responsive Design (Mobile-First)
+- ⚡ Server-Side Rendering mit ISR (Incremental Static Regeneration)
+- 🎨 Modernes Design mit Tremor UI (keine generischen shadcn Components)
+
+## Tech Stack
+
+- **Next.js 16** mit App Router und React 19
+- **TypeScript**
+- **Tremor UI** für Dashboard-Komponenten
+- **Tailwind CSS** für Styling
+- **Vercel Blob Storage** für Datenspeicherung
+- **date-fns** für Datumsformatierung
+
+## Setup
+
+### 1. Vercel Blob Storage einrichten
+
+1. Gehe zu [Vercel Dashboard](https://vercel.com/dashboard)
+2. Erstelle einen neuen Blob Store (Storage → Blob)
+3. Kopiere den `BLOB_READ_WRITE_TOKEN`
+
+### 2. Environment Variables
+
+Erstelle eine `.env.local` Datei:
+
+```bash
+cp .env.example .env.local
+```
+
+Füge deinen Token ein:
+
+```env
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxxxxxxxxxxx
+```
+
+### 3. Installation
+
+```bash
+npm install
+```
+
+### 4. Development Server starten
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Öffne [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment auf Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. GitHub Repository erstellen
 
-## Learn More
+```bash
+cd /Users/michaelmauch/Documents/Development/cmi-dashboard-next
+git init
+git add .
+git commit -m "Initial commit: KOKOMO Heating Dashboard"
+git branch -M main
+git remote add origin https://github.com/DEIN_USERNAME/cmi-dashboard-next.git
+git push -u origin main
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 2. Mit Vercel verbinden
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Gehe zu [Vercel Dashboard](https://vercel.com/new)
+2. Importiere dein GitHub Repository
+3. Vercel erkennt automatisch Next.js
+4. Füge Environment Variable hinzu:
+   - `BLOB_READ_WRITE_TOKEN`: Dein Blob Storage Token
+5. Deploy!
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 3. Automatisches Deployment
 
-## Deploy on Vercel
+Bei jedem Push zu `main` deployed Vercel automatisch die neue Version.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Raspberry Pi Setup
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Siehe [Raspberry Pi Setup Anleitung](./RASPBERRY_PI_SETUP.md) für die Einrichtung des Daten-Exports.
+
+## Datenstruktur
+
+Die Dashboard-Daten werden als JSON im Vercel Blob Storage gespeichert:
+
+```typescript
+interface DashboardData {
+  current_temps: CurrentTemperature[];
+  oven_state: OvenState;
+  fire_events: FireEvent[];
+  temperature_history: TemperatureReading[];
+  monthly_stats: MonthlyStats[];
+  last_updated: string;
+}
+```
+
+## Konfiguration
+
+### Revalidierung
+
+Standardmäßig werden die Daten alle 60 Minuten neu validiert. Anpassbar in `app/page.tsx`:
+
+```typescript
+export const revalidate = 3600; // Sekunden
+```
+
+### Anzahl der angezeigten Events
+
+In `components/fire-stats-table.tsx`:
+
+```typescript
+<FireStatsTable events={data.fire_events} limit={10} />
+```
+
+## Troubleshooting
+
+### "Dashboard data not found in blob storage"
+
+- Stelle sicher, dass der Raspberry Pi das Export-Script erfolgreich ausgeführt hat
+- Prüfe den `BLOB_READ_WRITE_TOKEN`
+- Checke Vercel Blob Dashboard für hochgeladene Dateien
+
+### Tremor Components werden nicht angezeigt
+
+- Überprüfe die Installation: `npm list @tremor/react`
+- Falls Peer-Dependency Warnung: Normal bei React 19, funktioniert trotzdem
+
+### Daten werden nicht aktualisiert
+
+- Prüfe Raspberry Pi Cron-Job Status
+- Checke Vercel Deployment Logs
+- ISR Cache könnte noch aktiv sein (max. 60 Min)
+
+## License
+
+MIT
