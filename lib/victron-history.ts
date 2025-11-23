@@ -181,7 +181,7 @@ export async function fetchLast24Months(): Promise<MonthStats[]> {
       const gridHistoryFrom = records.grid_history_from?.[0]?.[1] ?? 0;
 
       return {
-        timestamp: start,
+        timestamp: start * 1000,
         total_solar_yield: totalSolarYield,
         total_consumption: totalConsumption,
         grid_history_from: gridHistoryFrom,
