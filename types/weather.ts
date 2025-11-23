@@ -137,6 +137,8 @@ export interface ForecastDay {
   humidity: number;
   windSpeed: number;
   pop: number;
+  sunrise: number; // Unix timestamp
+  sunset: number; // Unix timestamp
 }
 
 /**

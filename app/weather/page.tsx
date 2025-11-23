@@ -332,6 +332,9 @@ export default async function WeatherPage() {
                   <Typography variant="caption" color="text.secondary" align="center" display="block" sx={{ mt: 1 }}>
                     💧 {day.pop}% | 💨 {day.windSpeed} km/h
                   </Typography>
+                  <Typography variant="caption" color="text.secondary" align="center" display="block" sx={{ mt: 0.5 }}>
+                    🌅 {formatTime(day.sunrise)} | 🌇 {formatTime(day.sunset)}
+                  </Typography>
                 </CardContent>
               </Card>
             ))}

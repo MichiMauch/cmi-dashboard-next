@@ -4,6 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import * as SunCalc from 'suncalc';
 import type {
   OpenWeatherCurrentResponse,
   OpenWeatherForecastResponse,
@@ -136,6 +137,8 @@ export async function GET() {
           humidity: item.main.humidity,
           windSpeed: Math.round(item.wind.speed * 3.6),
           pop: Math.round(item.pop * 100),
+          sunrise: 0, // Will be calculated later
+          sunset: 0, // Will be calculated later
         });
       } else {
         // Update min/max temperatures
@@ -150,13 +153,25 @@ export async function GET() {
       }
     });
 
+    // Calculate sunrise/sunset for each day using SunCalc
+    const lat = currentData.coord.lat;
+    const lon = currentData.coord.lon;
+
     const daily: ForecastDay[] = Array.from(dailyMap.values())
       .slice(0, 5) // 5 days
-      .map((day) => ({
-        ...day,
-        tempMin: Math.round(day.tempMin),
-        tempMax: Math.round(day.tempMax),
-      }));
+      .map((day) => {
+        // Get sunrise/sunset times for this day
+        const date = new Date(day.timestamp * 1000);
+        const times = SunCalc.getTimes(date, lat, lon);
+
+        return {
+          ...day,
+          tempMin: Math.round(day.tempMin),
+          tempMax: Math.round(day.tempMax),
+          sunrise: Math.floor(times.sunrise.getTime() / 1000), // Convert to Unix timestamp
+          sunset: Math.floor(times.sunset.getTime() / 1000), // Convert to Unix timestamp
+        };
+      });
 
     // Build processed response
     const processedData: ProcessedWeatherData = {
