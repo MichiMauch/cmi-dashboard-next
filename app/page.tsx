@@ -5,12 +5,13 @@
 
 'use client';
 
-import { Container, Typography, Box, Card, CardContent, CircularProgress, Alert } from '@mui/material';
+import { Container, Typography, Box, Card, CardContent, CircularProgress, Alert, Button } from '@mui/material';
 import { useState, useEffect } from 'react';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import OpacityIcon from '@mui/icons-material/Opacity';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 interface DayForecast {
   dayName: string;
@@ -41,25 +42,53 @@ export default function DashboardPage() {
   const [forecast, setForecast] = useState<LaundryForecast | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchForecast = async () => {
+    try {
+      const response = await fetch('/api/laundry-forecast', {
+        cache: 'no-store',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch forecast');
+      }
+      const data = await response.json();
+      setForecast(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setError(null);
+
+    try {
+      // Trigger forecast generation
+      const generateResponse = await fetch('/api/laundry-forecast/generate', {
+        cache: 'no-store',
+      });
+
+      if (!generateResponse.ok) {
+        throw new Error('Failed to generate new forecast');
+      }
+
+      // Wait a moment for the blob to be written
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Fetch the updated forecast
+      await fetchForecast();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchForecast() {
-      try {
-        const response = await fetch('/api/laundry-forecast', {
-          next: { revalidate: 7200 }, // Cache for 2 hours
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch forecast');
-        }
-        const data = await response.json();
-        setForecast(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
-    }
-
     fetchForecast();
   }, []);
 
@@ -85,24 +114,35 @@ export default function DashboardPage() {
         {/* Laundry Forecast Card */}
         <Card elevation={3} sx={{ mb: 4 }}>
           <CardContent sx={{ p: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-              <Box
-                sx={{
-                  backgroundColor: 'primary.main',
-                  borderRadius: '50%',
-                  width: 48,
-                  height: 48,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  mr: 2,
-                }}
-              >
-                <Typography variant="h4">👕</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Box
+                  sx={{
+                    backgroundColor: 'primary.main',
+                    borderRadius: '50%',
+                    width: 48,
+                    height: 48,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mr: 2,
+                  }}
+                >
+                  <Typography variant="h4">👕</Typography>
+                </Box>
+                <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                  Wäsche aufhängen - Beste Gelegenheit
+                </Typography>
               </Box>
-              <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                Wäsche aufhängen - Beste Gelegenheit
-              </Typography>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                onClick={handleRefresh}
+                disabled={refreshing || loading}
+                sx={{ ml: 2 }}
+              >
+                {refreshing ? 'Aktualisiere...' : 'Neu berechnen'}
+              </Button>
             </Box>
 
             {loading && (
