@@ -37,6 +37,12 @@ export async function GET(request: NextRequest) {
     );
 
     console.log('[API] Stats fetched successfully');
+    console.log('[API] Raw records keys:', Object.keys(stats.records));
+    console.log('[API] Sample Pdc data:', stats.records.Pdc?.slice(-2));
+    console.log('[API] Sample bs data:', stats.records.bs?.slice(-2));
+    console.log('[API] Sample Pac data:', stats.records.Pac?.slice(-2));
+    console.log('[API] Sample Pg data:', stats.records.Pg?.slice(-2));
+    console.log('[API] Sample Pb data:', stats.records.Pb?.slice(-2));
 
     // Process data for easier consumption
     const processedData = processSolarData(stats);

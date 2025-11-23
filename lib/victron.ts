@@ -83,10 +83,23 @@ export async function fetchVictronStats(
 export function processSolarData(stats: VictronStatsResponse): SolarData {
   const { records } = stats;
 
+  // Log available fields for debugging
+  console.log('[processSolarData] Available fields:', Object.keys(records));
+  console.log('[processSolarData] Field details:', {
+    Pdc: records.Pdc ? `${records.Pdc.length} entries` : 'missing',
+    bs: records.bs ? `${records.bs.length} entries` : 'missing',
+    Pb: records.Pb ? `${records.Pb.length} entries` : 'missing',
+    Pg: records.Pg ? `${records.Pg.length} entries` : 'missing',
+    Pac: records.Pac ? `${records.Pac.length} entries` : 'missing',
+    total_solar_yield: records.total_solar_yield ? `${records.total_solar_yield.length} entries` : 'missing',
+    total_consumption: records.total_consumption ? `${records.total_consumption.length} entries` : 'missing',
+  });
+
   // Get latest values from arrays
   const getLatestValue = (dataPoints?: Array<[number, number, number, number]>) => {
     if (!dataPoints || dataPoints.length === 0) return 0;
-    return dataPoints[dataPoints.length - 1][1] || 0;
+    const value = dataPoints[dataPoints.length - 1][1] || 0;
+    return value;
   };
 
   const getLatestTimestamp = (dataPoints?: Array<[number, number, number, number]>) => {
@@ -94,7 +107,7 @@ export function processSolarData(stats: VictronStatsResponse): SolarData {
     return dataPoints[dataPoints.length - 1][0] || Date.now() / 1000;
   };
 
-  return {
+  const processedData = {
     currentPower: getLatestValue(records.Pdc), // Solar power
     batteryCharge: getLatestValue(records.bs), // Battery %
     batteryPower: getLatestValue(records.Pb), // Battery power
@@ -104,4 +117,8 @@ export function processSolarData(stats: VictronStatsResponse): SolarData {
     todayConsumption: getLatestValue(records.total_consumption),
     timestamp: getLatestTimestamp(records.Pdc),
   };
+
+  console.log('[processSolarData] Processed values:', processedData);
+
+  return processedData;
 }
