@@ -133,11 +133,11 @@ ANTWORTE NUR mit einem JSON-Objekt in diesem exakten Format (keine zusätzlichen
   }
 }`;
 
-    // Call Gemini AI with corrected syntax
+    // Call Gemini AI with Free Tier compatible model
     let result;
     try {
       result = await genAI.models.generateContent({
-        model: 'gemini-2.0-flash-exp',
+        model: 'gemini-1.5-flash', // Free Tier compatible model
         contents: prompt,
       });
       console.log('[LaundryForecast] AI response received');
