@@ -61,13 +61,29 @@ export function GaugeCard({
           }}
         >
           <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+            {/* Background circle */}
+            <CircularProgress
+              variant="determinate"
+              value={100}
+              size={120}
+              thickness={4}
+              sx={{
+                color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
+              }}
+            />
+            {/* Value circle */}
             <CircularProgress
               variant="determinate"
               value={percentage}
               size={120}
               thickness={4}
               color={gaugeColor}
+              sx={{
+                position: 'absolute',
+                left: 0,
+              }}
             />
+            {/* Center text */}
             <Box
               sx={{
                 top: 0,
