@@ -100,15 +100,28 @@ export async function fetchLast7Days(): Promise<DayStats[]> {
 
   const results = await Promise.all(
     timestamps.map(async ({ start, end }) => {
+      console.log('[fetchLast7Days] Fetching day:', new Date(start * 1000).toISOString());
+
       const stats = await fetchWithTokenRefresh((token) =>
-        fetchVictronStats(INSTALLATION_ID, token, 'days', 'custom', start.toString())
+        fetchVictronStats(INSTALLATION_ID, token, 'days', 'kwh', start.toString())
       );
+
+      console.log('[fetchLast7Days] Response keys:', Object.keys(stats.records));
+      console.log('[fetchLast7Days] Sample data:', {
+        total_solar_yield: stats.records.total_solar_yield,
+        total_consumption: stats.records.total_consumption,
+        Pdc: stats.records.Pdc ? `${stats.records.Pdc.length} entries` : 'missing',
+      });
 
       const records = stats.records;
 
-      // Calculate peak power for the day
-      const peakPower = records.Pdc ? Math.max(...records.Pdc.map((item) => item[1])) : 0;
+      // Calculate peak power for the day - handle both array and single value
+      let peakPower = 0;
+      if (records.Pdc && Array.isArray(records.Pdc)) {
+        peakPower = Math.max(...records.Pdc.map((item) => item[1]));
+      }
 
+      // Historical data uses different format - single values not arrays
       return {
         timestamp: start * 1000,
         total_solar_yield: records.total_solar_yield?.[0]?.[1] ?? 0,
@@ -132,9 +145,14 @@ export async function fetchLast24Months(): Promise<MonthStats[]> {
 
   const results = await Promise.all(
     timestamps.map(async ({ start, end }) => {
+      console.log('[fetchLast24Months] Fetching month:', new Date(start * 1000).toISOString());
+
       const stats = await fetchWithTokenRefresh((token) =>
-        fetchVictronStats(INSTALLATION_ID, token, 'months', 'custom', start.toString())
+        fetchVictronStats(INSTALLATION_ID, token, 'months', 'kwh', start.toString())
       );
+
+      console.log('[fetchLast24Months] Response keys:', Object.keys(stats.records));
+      console.log('[fetchLast24Months] total_solar_yield:', stats.records?.total_solar_yield);
 
       return {
         timestamp: start,
@@ -152,11 +170,16 @@ export async function fetchLast24Months(): Promise<MonthStats[]> {
 export async function fetchAutarkieStats(): Promise<AutarkieStats> {
   const timestamps = getCurrentYearMonthlyTimestamps();
 
+  console.log('[fetchAutarkieStats] Fetching', timestamps.length, 'months');
+
   const results = await Promise.all(
     timestamps.map(async ({ start, end }) => {
       const stats = await fetchWithTokenRefresh((token) =>
-        fetchVictronStats(INSTALLATION_ID, token, 'months', 'custom', start.toString())
+        fetchVictronStats(INSTALLATION_ID, token, 'months', 'kwh', start.toString())
       );
+
+      console.log('[fetchAutarkieStats] Month response keys:', Object.keys(stats.records));
+
       return stats.records;
     })
   );
@@ -166,19 +189,34 @@ export async function fetchAutarkieStats(): Promise<AutarkieStats> {
   let totalConsumption = 0;
   let gridHistoryFrom = 0;
 
-  results.forEach((records) => {
-    if (records.total_solar_yield) {
+  results.forEach((records, index) => {
+    console.log(`[fetchAutarkieStats] Month ${index} data:`, {
+      total_solar_yield: records.total_solar_yield,
+      total_consumption: records.total_consumption,
+      grid_history_from: records.grid_history_from,
+    });
+
+    if (records.total_solar_yield && Array.isArray(records.total_solar_yield)) {
       totalSolarYield += records.total_solar_yield[0][1];
     }
-    if (records.total_consumption) {
+    if (records.total_consumption && Array.isArray(records.total_consumption)) {
       totalConsumption += records.total_consumption[0][1];
     }
-    if (records.grid_history_from) {
+    if (records.grid_history_from && Array.isArray(records.grid_history_from)) {
       gridHistoryFrom += records.grid_history_from[0][1];
     }
   });
 
-  const autarkie = ((totalConsumption - gridHistoryFrom) / totalConsumption) * 100;
+  const autarkie = totalConsumption > 0
+    ? ((totalConsumption - gridHistoryFrom) / totalConsumption) * 100
+    : 0;
+
+  console.log('[fetchAutarkieStats] Totals:', {
+    totalSolarYield,
+    totalConsumption,
+    gridHistoryFrom,
+    autarkie,
+  });
 
   return {
     total_solar_yield: totalSolarYield,
