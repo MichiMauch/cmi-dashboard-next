@@ -72,16 +72,29 @@ export async function GET() {
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'cmi-dashboard-next.vercel.app'}`
       : 'http://localhost:3000';
 
-    const weatherResponse = await fetch(`${baseUrl}/api/weather`, {
-      next: { revalidate: 600 },
-    });
+    const weatherUrl = `${baseUrl}/api/weather`;
+    console.log('[LaundryForecast] Fetching from:', weatherUrl);
+
+    let weatherResponse;
+    try {
+      weatherResponse = await fetch(weatherUrl, {
+        next: { revalidate: 600 },
+      });
+    } catch (fetchError) {
+      console.error('[LaundryForecast] Weather fetch error:', fetchError);
+      throw new Error(`Failed to fetch weather data: ${fetchError instanceof Error ? fetchError.message : 'Unknown fetch error'}`);
+    }
+
+    console.log('[LaundryForecast] Weather response status:', weatherResponse.status);
 
     if (!weatherResponse.ok) {
-      throw new Error('Failed to fetch weather data');
+      const errorText = await weatherResponse.text().catch(() => 'No error details');
+      console.error('[LaundryForecast] Weather API error response:', errorText);
+      throw new Error(`Weather API returned ${weatherResponse.status}: ${errorText}`);
     }
 
     const weatherData: ProcessedWeatherData = await weatherResponse.json();
-    console.log('[LaundryForecast] Weather data received');
+    console.log('[LaundryForecast] Weather data received successfully');
 
     // Prepare data for AI
     const forecastData = prepareWeatherDataForAI(weatherData);
@@ -120,19 +133,18 @@ ANTWORTE NUR mit einem JSON-Objekt in diesem exakten Format (keine zusätzlichen
   }
 }`;
 
-    // Call Gemini AI
-    const result = await genAI.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
-      contents: prompt,
-      config: {
-        temperature: 0.7,
-        topP: 0.95,
-        topK: 40,
-        maxOutputTokens: 1024,
-      },
-    });
-
-    console.log('[LaundryForecast] AI response received');
+    // Call Gemini AI with corrected syntax
+    let result;
+    try {
+      result = await genAI.models.generateContent({
+        model: 'gemini-2.0-flash-exp',
+        contents: prompt,
+      });
+      console.log('[LaundryForecast] AI response received');
+    } catch (aiError) {
+      console.error('[LaundryForecast] Gemini AI error:', aiError);
+      throw new Error(`Gemini AI call failed: ${aiError instanceof Error ? aiError.message : 'Unknown AI error'}`);
+    }
 
     // Extract and parse response
     const responseText = result.text || '';
@@ -162,8 +174,17 @@ ANTWORTE NUR mit einem JSON-Objekt in diesem exakten Format (keine zusätzlichen
     return NextResponse.json(forecast);
   } catch (error) {
     console.error('[LaundryForecast] Error generating forecast:', error);
+
+    // Log full error details for debugging
+    if (error instanceof Error) {
+      console.error('[LaundryForecast] Error stack:', error.stack);
+    }
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: error instanceof Error ? error.stack : String(error)
+      },
       { status: 500 }
     );
   }
