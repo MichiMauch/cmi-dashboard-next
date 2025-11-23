@@ -3,19 +3,6 @@
  * Displays solar panel, battery, and consumption data from Victron Energy
  */
 
-import { BatteryDisplay } from '@/components/solar/battery-display';
-import { PowerDisplay } from '@/components/solar/power-display';
-import { ConsumptionDisplay } from '@/components/solar/consumption-display';
-import { PeakPowerDisplay } from '@/components/solar/peak-power-display';
-import { SolarYieldDisplay } from '@/components/solar/solar-yield-display';
-import { AutarkieDisplay } from '@/components/solar/autarkie-display';
-import { YearSolarYieldDisplay } from '@/components/solar/year-solar-yield-display';
-import { YearConsumptionDisplay } from '@/components/solar/year-consumption-display';
-import { YearGridImportDisplay } from '@/components/solar/year-grid-import-display';
-import { MonthlyYieldChart } from '@/components/solar/monthly-yield-chart';
-import { MonthlyDataDisplay } from '@/components/solar/monthly-data-display';
-import { PeakPowerChart } from '@/components/solar/peak-power-chart';
-import { GridImportChart } from '@/components/solar/grid-import-chart';
 import { fetchVictronStats, processSolarData } from '@/lib/victron';
 import { fetchWithTokenRefresh } from '@/lib/victron-token';
 import {
@@ -24,6 +11,21 @@ import {
   fetchAutarkieStats,
   fetchLast30DaysPeakPower,
 } from '@/lib/victron-history';
+import { StatCard } from '@/components/shared/stat-card';
+import { MetricCard } from '@/components/shared/metric-card';
+import { GaugeCard } from '@/components/shared/gauge-card';
+import { DataTable, DataTableColumn } from '@/components/shared/data-table';
+import { ChartCard } from '@/components/shared/chart-card';
+import { Container, Typography, Box } from '@mui/material';
+import { BarChart } from '@mui/x-charts/BarChart';
+import { LineChart } from '@mui/x-charts/LineChart';
+import BoltIcon from '@mui/icons-material/Bolt';
+import BatteryChargingFullIcon from '@mui/icons-material/BatteryChargingFull';
+import WbSunnyIcon from '@mui/icons-material/WbSunny';
+import FlashOnIcon from '@mui/icons-material/FlashOn';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ElectricBoltIcon from '@mui/icons-material/ElectricBolt';
+import PowerIcon from '@mui/icons-material/Power';
 
 export const revalidate = 300; // Revalidate every 5 minutes
 
@@ -37,12 +39,10 @@ async function getSolarData() {
 
     console.log('[SolarPage] Fetching Victron data...');
 
-    // Fetch data directly (no HTTP call needed)
     const stats = await fetchWithTokenRefresh((token) =>
       fetchVictronStats(installationId, token, '15mins', 'live_feed')
     );
 
-    // Process data for easier consumption
     const processedData = processSolarData(stats);
 
     console.log('[SolarPage] Data fetched successfully');
@@ -59,178 +59,355 @@ async function getSolarData() {
 }
 
 export default async function SolarPage() {
-  // Fetch all data in parallel
   const [solarData, last7Days, last24Months, autarkieStats, peakPowerHistory] = await Promise.all([
     getSolarData(),
-    fetchLast7Days().catch((err) => {
-      console.error('[SolarPage] Error fetching last 7 days:', err);
-      return [];
-    }),
-    fetchLast24Months().catch((err) => {
-      console.error('[SolarPage] Error fetching last 24 months:', err);
-      return [];
-    }),
-    fetchAutarkieStats().catch((err) => {
-      console.error('[SolarPage] Error fetching autarkie stats:', err);
-      return null;
-    }),
-    fetchLast30DaysPeakPower().catch((err) => {
-      console.error('[SolarPage] Error fetching peak power history:', err);
-      return [];
-    }),
+    fetchLast7Days().catch(() => []),
+    fetchLast24Months().catch(() => []),
+    fetchAutarkieStats().catch(() => null),
+    fetchLast30DaysPeakPower().catch(() => []),
   ]);
 
   if (!solarData || 'error' in solarData) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8 flex items-center justify-center">
-        <div className="text-center max-w-2xl">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-4">
+      <Container maxWidth="md">
+        <Box sx={{ my: 8, textAlign: 'center' }}>
+          <Typography variant="h4" gutterBottom>
             ⚠️ Solar-Daten nicht verfügbar
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 mb-4">
+          </Typography>
+          <Typography color="text.secondary" paragraph>
             Die Victron API kann derzeit nicht erreicht werden.
-          </p>
+          </Typography>
           {'error' in solarData && (
-            <p className="text-sm text-red-600 dark:text-red-400 font-mono bg-slate-100 dark:bg-slate-800 p-4 rounded">
+            <Box
+              sx={{
+                mt: 2,
+                p: 2,
+                bgcolor: 'error.main',
+                color: 'error.contrastText',
+                borderRadius: 1,
+                fontFamily: 'monospace',
+                fontSize: '0.875rem',
+              }}
+            >
               {solarData.error}
-            </p>
+            </Box>
           )}
-          <div className="mt-6 text-left text-sm text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 p-4 rounded">
-            <p className="font-semibold mb-2">Bitte prüfen Sie auf Vercel:</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>MONGODB_URI ist korrekt gesetzt</li>
-              <li>VICTRON_USERNAME ist gesetzt</li>
-              <li>VICTRON_PASSWORD ist gesetzt</li>
-              <li>VICTRON_INSTALLATION_ID ist gesetzt</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+        </Box>
+      </Container>
     );
   }
 
   const { processed } = solarData;
 
+  // Prepare chart data
+  const monthlyChartData = last24Months.map((item) => ({
+    month: new Date(item.timestamp).toLocaleDateString('de-DE', { month: 'short', year: '2-digit' }),
+    yield: item.total_solar_yield,
+    consumption: item.total_consumption,
+    gridImport: item.grid_history_from,
+  }));
+
+  const peakPowerChartData = peakPowerHistory.map((item) => ({
+    date: new Date(item.timestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
+    peak: item.peak_power / 1000, // Convert to kW
+  }));
+
+  // Prepare table data (format on server)
+  const last7DaysRows = last7Days.map((item) => ({
+    timestamp: new Date(item.timestamp).toLocaleDateString('de-DE'),
+    total_solar_yield: `${item.total_solar_yield.toFixed(2)} kWh`,
+    total_consumption: `${item.total_consumption.toFixed(2)} kWh`,
+  }));
+
+  const last7DaysColumns: DataTableColumn[] = [
+    { id: 'timestamp', label: 'Datum' },
+    { id: 'total_solar_yield', label: 'Ertrag', align: 'right' },
+    { id: 'total_consumption', label: 'Verbrauch', align: 'right' },
+  ];
+
+  const monthlyDataRows = last24Months.slice(0, 12).map((item) => ({
+    timestamp: new Date(item.timestamp).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }),
+    total_solar_yield: `${item.total_solar_yield.toFixed(2)} kWh`,
+    total_consumption: `${item.total_consumption.toFixed(2)} kWh`,
+    grid_history_from: `${item.grid_history_from.toFixed(2)} kWh`,
+  }));
+
+  const monthlyDataColumns: DataTableColumn[] = [
+    { id: 'timestamp', label: 'Monat' },
+    { id: 'total_solar_yield', label: 'Solar Ertrag', align: 'right' },
+    { id: 'total_consumption', label: 'Verbrauch', align: 'right' },
+    { id: 'grid_history_from', label: 'Netz Bezug', align: 'right' },
+  ];
+
+  // Calculate peak power for today
+  const todayPeak = peakPowerHistory[0]?.peak_power || 0;
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <Container maxWidth="xl">
+      <Box sx={{ my: 4 }}>
         {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-yellow-500 to-orange-600 bg-clip-text text-transparent">
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Typography
+            variant="h3"
+            component="h1"
+            gutterBottom
+            sx={{
+              background: 'linear-gradient(to right, #eab308, #ea580c)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontWeight: 700,
+            }}
+          >
             ☀️ Solar Dashboard
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400">
+          </Typography>
+          <Typography variant="body1" color="text.secondary" gutterBottom>
             Live-Daten von Victron Energy VRM
-          </p>
-          <p className="text-sm text-slate-500">
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
             Letztes Update: {new Date(solarData.timestamp).toLocaleString('de-DE')}
-          </p>
-        </div>
+          </Typography>
+        </Box>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-            <p className="text-sm text-slate-600 dark:text-slate-400">Aktuelle Leistung</p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">
-              {processed.currentPower.toFixed(0)} <span className="text-lg">W</span>
-            </p>
-          </div>
-
-          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-            <p className="text-sm text-slate-600 dark:text-slate-400">Batterieladung</p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">
-              {processed.batteryCharge.toFixed(1)} <span className="text-lg">%</span>
-            </p>
-          </div>
-
-          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-            <p className="text-sm text-slate-600 dark:text-slate-400">Heutiger Ertrag</p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">
-              {processed.todayYield.toFixed(2)} <span className="text-lg">kWh</span>
-            </p>
-          </div>
-
-          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-            <p className="text-sm text-slate-600 dark:text-slate-400">Verbrauch Heute</p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-slate-50">
-              {processed.todayConsumption.toFixed(2)} <span className="text-lg">kWh</span>
-            </p>
-          </div>
-        </div>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' },
+            gap: 3,
+            mb: 4,
+          }}
+        >
+          <StatCard
+            title="Aktuelle Leistung"
+            value={`${processed.currentPower.toFixed(0)} W`}
+            icon={<BoltIcon />}
+            color="warning"
+          />
+          <StatCard
+            title="Batterieladung"
+            value={`${processed.batteryCharge.toFixed(1)} %`}
+            icon={<BatteryChargingFullIcon />}
+            color="success"
+          />
+          <StatCard
+            title="Heutiger Ertrag"
+            value={`${processed.todayYield.toFixed(2)} kWh`}
+            icon={<WbSunnyIcon />}
+            color="warning"
+          />
+          <StatCard
+            title="Verbrauch Heute"
+            value={`${processed.todayConsumption.toFixed(2)} kWh`}
+            icon={<FlashOnIcon />}
+            color="info"
+          />
+        </Box>
 
         {/* Power Flow Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <PowerDisplay power={processed.currentPower} />
-          <ConsumptionDisplay
-            todayConsumption={processed.todayConsumption}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+            gap: 3,
+            mb: 4,
+          }}
+        >
+          <MetricCard
+            title="Solarleistung"
+            value={processed.currentPower.toFixed(0)}
+            unit="W"
+            icon={<WbSunnyIcon />}
+            color="warning"
+            subtitle={`Heute: ${processed.todayYield.toFixed(2)} kWh`}
           />
-          <PeakPowerDisplay />
-        </div>
+          <MetricCard
+            title="Verbrauch"
+            value={processed.todayConsumption.toFixed(2)}
+            unit="kWh"
+            icon={<ElectricBoltIcon />}
+            color="info"
+            subtitle="Heute"
+          />
+          <MetricCard
+            title="Spitzenleistung"
+            value={(todayPeak / 1000).toFixed(2)}
+            unit="kW"
+            icon={<PowerIcon />}
+            color="error"
+            subtitle="Heute"
+          />
+        </Box>
 
-        {/* Battery Status and Autarkie */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="h-80">
-            <BatteryDisplay charge={processed.batteryCharge} />
-          </div>
+        {/* Battery and Autarkie */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' },
+            gap: 3,
+            mb: 4,
+          }}
+        >
+          <GaugeCard
+            title="Batterieladung"
+            value={processed.batteryCharge}
+            maxValue={100}
+            unit="%"
+            thresholds={{ low: 20, medium: 50, high: 100 }}
+          />
           {autarkieStats && (
-            <div className="h-80">
-              <AutarkieDisplay data={autarkieStats} />
-            </div>
+            <MetricCard
+              title="Autarkie"
+              value={autarkieStats.autarkie.toFixed(1)}
+              unit="%"
+              icon={<CheckCircleIcon />}
+              color="success"
+              subtitle={`${autarkieStats.total_solar_yield.toFixed(0)} kWh Solar / ${autarkieStats.total_consumption.toFixed(0)} kWh Verbrauch`}
+            />
           )}
-        </div>
+        </Box>
 
-        {/* Year Statistics Cards */}
+        {/* Year Statistics */}
         {autarkieStats && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <YearSolarYieldDisplay totalYield={autarkieStats.total_solar_yield} />
-            <YearConsumptionDisplay totalConsumption={autarkieStats.total_consumption} />
-            <YearGridImportDisplay gridImport={autarkieStats.grid_history_from} />
-          </div>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+              gap: 3,
+              mb: 4,
+            }}
+          >
+            <StatCard
+              title="Solar Ertrag (Jahr)"
+              value={`${autarkieStats.total_solar_yield.toFixed(0)} kWh`}
+              icon={<WbSunnyIcon />}
+              color="warning"
+            />
+            <StatCard
+              title="Verbrauch (Jahr)"
+              value={`${autarkieStats.total_consumption.toFixed(0)} kWh`}
+              icon={<ElectricBoltIcon />}
+              color="info"
+            />
+            <StatCard
+              title="Netzbezug (Jahr)"
+              value={`${autarkieStats.grid_history_from.toFixed(0)} kWh`}
+              icon={<PowerIcon />}
+              color="error"
+            />
+          </Box>
         )}
 
-        {/* Historical Data Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Last 7 Days */}
+        {/* Data Tables */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' },
+            gap: 3,
+            mb: 4,
+          }}
+        >
           {last7Days.length > 0 && (
-            <div>
-              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
-                Letzte 7 Tage
-              </h3>
-              <SolarYieldDisplay data={last7Days} />
-            </div>
+            <DataTable title="Letzte 7 Tage" columns={last7DaysColumns} rows={last7DaysRows} maxHeight={400} />
           )}
-
-          {/* Monthly Data Table */}
           {last24Months.length > 0 && (
-            <div>
-              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
-                Monatliche Daten
-              </h3>
-              <MonthlyDataDisplay data={last24Months} />
-            </div>
+            <DataTable
+              title="Monatliche Daten"
+              columns={monthlyDataColumns}
+              rows={monthlyDataRows}
+              maxHeight={400}
+            />
           )}
-        </div>
+        </Box>
 
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Monthly Yield Chart */}
-          {last24Months.length > 0 && (
-            <MonthlyYieldChart data={last24Months} />
+        {/* Charts */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' },
+            gap: 3,
+            mb: 4,
+          }}
+        >
+          {monthlyChartData.length > 0 && (
+            <ChartCard title="Monatlicher Ertrag" height={300}>
+              <BarChart
+                dataset={monthlyChartData}
+                xAxis={[
+                  {
+                    scaleType: 'band',
+                    dataKey: 'month',
+                    tickLabelStyle: { angle: -45, textAnchor: 'end', fontSize: 10 },
+                  },
+                ]}
+                series={[
+                  {
+                    dataKey: 'yield',
+                    label: 'Solar Ertrag (kWh)',
+                    color: '#eab308',
+                  },
+                  {
+                    dataKey: 'consumption',
+                    label: 'Verbrauch (kWh)',
+                    color: '#3b82f6',
+                  },
+                ]}
+                height={300}
+              />
+            </ChartCard>
           )}
 
-          {/* Peak Power Chart */}
-          {peakPowerHistory.length > 0 && (
-            <PeakPowerChart data={peakPowerHistory} />
+          {peakPowerChartData.length > 0 && (
+            <ChartCard title="Spitzenleistung (30 Tage)" height={300}>
+              <LineChart
+                dataset={peakPowerChartData}
+                xAxis={[
+                  {
+                    scaleType: 'band',
+                    dataKey: 'date',
+                    tickLabelStyle: { angle: -45, textAnchor: 'end', fontSize: 10 },
+                  },
+                ]}
+                series={[
+                  {
+                    dataKey: 'peak',
+                    label: 'Peak (kW)',
+                    color: '#dc2626',
+                    showMark: false,
+                  },
+                ]}
+                height={300}
+              />
+            </ChartCard>
           )}
-        </div>
+        </Box>
 
         {/* Grid Import Chart */}
-        {last24Months.length > 0 && (
-          <div className="grid grid-cols-1 gap-4">
-            <GridImportChart data={last24Months} />
-          </div>
+        {monthlyChartData.length > 0 && (
+          <Box sx={{ mb: 4 }}>
+            <ChartCard title="Netzbezug Verlauf" height={300}>
+              <BarChart
+                dataset={monthlyChartData}
+                xAxis={[
+                  {
+                    scaleType: 'band',
+                    dataKey: 'month',
+                    tickLabelStyle: { angle: -45, textAnchor: 'end', fontSize: 10 },
+                  },
+                ]}
+                series={[
+                  {
+                    dataKey: 'gridImport',
+                    label: 'Netzbezug (kWh)',
+                    color: '#ef4444',
+                  },
+                ]}
+                height={300}
+              />
+            </ChartCard>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Container>
   );
 }
