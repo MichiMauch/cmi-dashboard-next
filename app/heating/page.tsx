@@ -16,7 +16,7 @@ import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 
-export const revalidate = 3600; // Revalidate every 60 minutes
+export const revalidate = 300; // Revalidate every 5 minutes
 
 const MONTH_NAMES: Record<string, string> = {
   '01': 'Januar',

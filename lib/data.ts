@@ -51,7 +51,7 @@ export const getDashboardData = unstable_cache(
   },
   ['dashboard-data'],
   {
-    revalidate: 3600, // Revalidate every 60 minutes
+    revalidate: 300, // Revalidate every 5 minutes
     tags: ['dashboard'],
   }
 );
