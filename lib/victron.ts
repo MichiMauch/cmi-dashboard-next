@@ -64,9 +64,6 @@ export async function fetchVictronStats(
     headers: {
       'x-authorization': `Bearer ${token}`,
     },
-    next: {
-      revalidate: type === 'live_feed' ? 60 : 3600, // 1 min for live, 1h for historical
-    },
   });
 
   if (!response.ok) {

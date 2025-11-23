@@ -55,7 +55,11 @@ export function LiveStats({ initialData, todayPeak, autarkieStats }: LiveStatsPr
         setLoading(true);
         setError(null);
 
-        const response = await fetch('/api/victron/stats?interval=15mins&type=live_feed');
+        // Add cache-busting timestamp and disable caching
+        const response = await fetch(
+          `/api/victron/stats?interval=15mins&type=live_feed&t=${Date.now()}`,
+          { cache: 'no-store' }
+        );
 
         if (!response.ok) {
           throw new Error('Failed to fetch data');
@@ -72,7 +76,10 @@ export function LiveStats({ initialData, todayPeak, autarkieStats }: LiveStatsPr
       }
     };
 
-    // Poll every 60 seconds
+    // Fetch immediately on mount
+    fetchData();
+
+    // Then poll every 60 seconds
     const interval = setInterval(fetchData, 60000);
 
     // Cleanup on unmount
