@@ -39,6 +39,18 @@ export interface VictronStatsResponse {
 
     // Battery current
     Ib?: DataPoint[];
+
+    // Average power
+    average_power?: DataPoint[];
+
+    // Total energy imported from grid
+    total_energy_imported?: DataPoint[];
+
+    // Total energy exported to grid
+    total_energy_exported?: DataPoint[];
+
+    // Grid history from
+    grid_history_from?: DataPoint[];
   };
   totals?: {
     Pdc?: number;

@@ -8,8 +8,16 @@ import { PowerDisplay } from '@/components/solar/power-display';
 import { ConsumptionDisplay } from '@/components/solar/consumption-display';
 import { GridPowerDisplay } from '@/components/solar/grid-power-display';
 import { BatteryPowerDisplay } from '@/components/solar/battery-power-display';
+import { SolarYieldDisplay } from '@/components/solar/solar-yield-display';
+import { AutarkieDisplay } from '@/components/solar/autarkie-display';
+import { MonthlyYieldChart } from '@/components/solar/monthly-yield-chart';
 import { fetchVictronStats, processSolarData } from '@/lib/victron';
 import { fetchWithTokenRefresh } from '@/lib/victron-token';
+import {
+  fetchLast7Days,
+  fetchLast24Months,
+  fetchAutarkieStats,
+} from '@/lib/victron-history';
 
 export const revalidate = 300; // Revalidate every 5 minutes
 
@@ -45,7 +53,22 @@ async function getSolarData() {
 }
 
 export default async function SolarPage() {
-  const solarData = await getSolarData();
+  // Fetch all data in parallel
+  const [solarData, last7Days, last24Months, autarkieStats] = await Promise.all([
+    getSolarData(),
+    fetchLast7Days().catch((err) => {
+      console.error('[SolarPage] Error fetching last 7 days:', err);
+      return [];
+    }),
+    fetchLast24Months().catch((err) => {
+      console.error('[SolarPage] Error fetching last 24 months:', err);
+      return [];
+    }),
+    fetchAutarkieStats().catch((err) => {
+      console.error('[SolarPage] Error fetching autarkie stats:', err);
+      return null;
+    }),
+  ]);
 
   if (!solarData || 'error' in solarData) {
     return (
@@ -136,24 +159,36 @@ export default async function SolarPage() {
           <BatteryPowerDisplay batteryPower={processed.batteryPower} />
         </div>
 
-        {/* Battery Status */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-1 h-80">
+        {/* Battery Status and Autarkie */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="h-80">
             <BatteryDisplay charge={processed.batteryCharge} />
           </div>
-
-          {/* Placeholder for future components */}
-          <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl shadow-md p-6">
-            <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-50 mb-4">
-              Verlaufsdaten
-            </h3>
-            <div className="text-center text-slate-500 dark:text-slate-400 py-8">
-              <p>Charts und historische Daten folgen...</p>
-              <p className="text-xs mt-2">
-                (Autarkie, Monatsertrag, Peak Power, etc.)
-              </p>
+          {autarkieStats && (
+            <div className="h-80">
+              <AutarkieDisplay data={autarkieStats} />
             </div>
-          </div>
+          )}
+        </div>
+
+        {/* Historical Data Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Last 7 Days */}
+          {last7Days.length > 0 && (
+            <div>
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                Letzte 7 Tage
+              </h3>
+              <SolarYieldDisplay data={last7Days} />
+            </div>
+          )}
+
+          {/* Monthly Chart */}
+          {last24Months.length > 0 && (
+            <div className="lg:col-span-1">
+              <MonthlyYieldChart data={last24Months} />
+            </div>
+          )}
         </div>
       </div>
     </div>
