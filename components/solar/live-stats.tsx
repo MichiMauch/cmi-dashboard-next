@@ -79,8 +79,8 @@ export function LiveStats({ initialData, todayPeak, autarkieStats }: LiveStatsPr
     // Fetch immediately on mount
     fetchData();
 
-    // Then poll every 60 seconds
-    const interval = setInterval(fetchData, 60000);
+    // Then poll every 15 seconds
+    const interval = setInterval(fetchData, 15000);
 
     // Cleanup on unmount
     return () => clearInterval(interval);

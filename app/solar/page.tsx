@@ -22,7 +22,7 @@ import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import ElectricBoltIcon from '@mui/icons-material/ElectricBolt';
 import PowerIcon from '@mui/icons-material/Power';
 
-export const revalidate = 60; // Revalidate every 1 minute
+export const revalidate = 15; // Revalidate every 15 seconds
 
 async function getSolarData() {
   try {

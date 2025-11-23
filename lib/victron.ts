@@ -106,14 +106,29 @@ export function processSolarData(stats: VictronStatsResponse): SolarData {
     return dataPoints[dataPoints.length - 1][0] || Date.now() / 1000;
   };
 
+  // Sum all values from today (like the old project does)
+  const getTodaySum = (dataPoints?: Array<[number, number, number, number]>) => {
+    if (!dataPoints || dataPoints.length === 0) return 0;
+
+    const today = new Date().setHours(0, 0, 0, 0);
+
+    return dataPoints
+      .filter(([timestamp]) => {
+        // Timestamps from API are in milliseconds (Unix timestamp * 1000)
+        const recordDate = new Date(timestamp * 1000).setHours(0, 0, 0, 0);
+        return recordDate === today;
+      })
+      .reduce((sum, [, value]) => sum + value, 0);
+  };
+
   const processedData = {
     currentPower: getLatestValue(records.Pdc), // Solar power
     batteryCharge: getLatestValue(records.bs), // Battery %
     batteryPower: getLatestValue(records.Pb), // Battery power
     gridPower: getLatestValue(records.Pg), // Grid power
     consumption: getLatestValue(records.Pac), // AC consumption
-    todayYield: getLatestValue(records.total_solar_yield),
-    todayConsumption: getLatestValue(records.total_consumption),
+    todayYield: getTodaySum(records.total_solar_yield), // Sum all today's values
+    todayConsumption: getTodaySum(records.total_consumption), // Sum all today's values
     timestamp: getLatestTimestamp(records.Pdc),
   };
 
