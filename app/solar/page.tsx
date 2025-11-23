@@ -6,8 +6,6 @@
 import { BatteryDisplay } from '@/components/solar/battery-display';
 import { PowerDisplay } from '@/components/solar/power-display';
 import { ConsumptionDisplay } from '@/components/solar/consumption-display';
-import { GridPowerDisplay } from '@/components/solar/grid-power-display';
-import { BatteryPowerDisplay } from '@/components/solar/battery-power-display';
 import { SolarYieldDisplay } from '@/components/solar/solar-yield-display';
 import { AutarkieDisplay } from '@/components/solar/autarkie-display';
 import { MonthlyYieldChart } from '@/components/solar/monthly-yield-chart';
@@ -149,14 +147,11 @@ export default async function SolarPage() {
         </div>
 
         {/* Power Flow Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <PowerDisplay power={processed.currentPower} />
           <ConsumptionDisplay
-            currentConsumption={processed.consumption}
             todayConsumption={processed.todayConsumption}
           />
-          <GridPowerDisplay gridPower={processed.gridPower} />
-          <BatteryPowerDisplay batteryPower={processed.batteryPower} />
         </div>
 
         {/* Battery Status and Autarkie */}

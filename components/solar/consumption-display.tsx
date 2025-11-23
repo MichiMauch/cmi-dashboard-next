@@ -1,17 +1,15 @@
 /**
  * Consumption Display Component
- * Shows current consumption and today's total consumption
+ * Shows today's total consumption (no real-time data available from API)
  */
 
 import React from 'react';
 
 interface ConsumptionDisplayProps {
-  currentConsumption: number; // Current consumption in Watts
   todayConsumption: number; // Today's total consumption in kWh
 }
 
 export function ConsumptionDisplay({
-  currentConsumption,
   todayConsumption,
 }: ConsumptionDisplayProps) {
   return (
@@ -22,13 +20,10 @@ export function ConsumptionDisplay({
         </div>
       </div>
       <h1 className="text-3xl sm:text-4xl xl:text-5xl font-bold text-slate-700 dark:text-slate-100 mt-6 group-hover:text-white">
-        {currentConsumption.toFixed(0)} W
+        {todayConsumption.toFixed(2)} kWh
       </h1>
       <div className="flex flex-col text-slate-700 dark:text-slate-300 group-hover:text-slate-100">
-        <p className="font-medium">Aktueller Verbrauch</p>
-        <p className="text-sm mt-1">
-          Heute: {todayConsumption.toFixed(2)} kWh
-        </p>
+        <p className="font-medium">Heutiger Verbrauch</p>
       </div>
     </div>
   );
