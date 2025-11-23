@@ -6,7 +6,7 @@ import { list } from '@vercel/blob';
 import { DashboardData } from '@/types/dashboard';
 import { unstable_cache } from 'next/cache';
 
-const BLOB_NAME = 'dashboard-data.json';
+const BLOB_PREFIX = 'dashboard-data';
 
 /**
  * Fetch dashboard data from Vercel Blob Storage
@@ -15,16 +15,16 @@ const BLOB_NAME = 'dashboard-data.json';
 export const getDashboardData = unstable_cache(
   async (): Promise<DashboardData> => {
     try {
-      // List blobs and find our dashboard data file
+      // List all blobs with dashboard-data prefix
       const { blobs } = await list({
-        prefix: BLOB_NAME,
-        limit: 1,
+        prefix: BLOB_PREFIX,
       });
 
       if (!blobs || blobs.length === 0) {
         throw new Error('Dashboard data not found in blob storage');
       }
 
+      // Get the most recent blob (they are sorted by uploadedAt desc by default)
       const blob = blobs[0];
 
       // Download and parse JSON
