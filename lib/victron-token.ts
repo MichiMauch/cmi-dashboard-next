@@ -1,38 +1,45 @@
 /**
- * Victron Token Management with Vercel KV
+ * Victron Token Management with MongoDB
  * Handles token storage, retrieval, and automatic refresh
  */
 
-import { kv } from '@vercel/kv';
+import dbConnect from './dbConnect';
+import Token from '@/models/token';
 import { loginToVictron } from './victron';
 
-const TOKEN_KEY = 'victron_access_token';
-const TOKEN_TTL = 3600; // 1 hour
+const TOKEN_TTL = 3600; // 1 hour in seconds
 
 /**
  * Get valid Victron access token
- * First tries KV, then falls back to login
+ * First tries MongoDB, then falls back to login
  */
 export async function getVictronToken(): Promise<string> {
   try {
-    // Try to get token from KV
-    const storedToken = await kv.get<string>(TOKEN_KEY);
+    await dbConnect();
 
-    if (storedToken) {
-      console.log('Using stored Victron token from KV');
-      return storedToken;
+    // Try to get token from MongoDB
+    const tokenDoc = await Token.findOne();
+
+    if (tokenDoc && tokenDoc.expiresAt > new Date()) {
+      console.log('Using stored Victron token from MongoDB');
+      return tokenDoc.accessToken;
+    }
+
+    // Token expired or doesn't exist
+    if (tokenDoc) {
+      console.log('Token expired, refreshing...');
     }
   } catch (error) {
-    console.warn('KV not available, will generate new token:', error);
+    console.warn('MongoDB not available, will generate new token:', error);
   }
 
-  // No stored token or KV not available, login and get new token
+  // No valid stored token, login and get new token
   return await refreshVictronToken();
 }
 
 /**
  * Refresh Victron token by logging in again
- * Stores new token in KV
+ * Stores new token in MongoDB
  */
 export async function refreshVictronToken(): Promise<string> {
   const username = process.env.VICTRON_USERNAME;
@@ -45,12 +52,20 @@ export async function refreshVictronToken(): Promise<string> {
   console.log('Refreshing Victron token via login...');
   const newToken = await loginToVictron(username, password);
 
-  // Try to store in KV (don't fail if KV not available)
+  // Calculate expiration time
+  const expiresAt = new Date(Date.now() + TOKEN_TTL * 1000);
+
+  // Store in MongoDB (upsert)
   try {
-    await kv.set(TOKEN_KEY, newToken, { ex: TOKEN_TTL });
-    console.log('New Victron token stored in KV');
+    await dbConnect();
+    await Token.updateOne(
+      {},
+      { accessToken: newToken, expiresAt },
+      { upsert: true }
+    );
+    console.log('New Victron token stored in MongoDB');
   } catch (error) {
-    console.warn('Could not store token in KV:', error);
+    console.warn('Could not store token in MongoDB:', error);
   }
 
   return newToken;
