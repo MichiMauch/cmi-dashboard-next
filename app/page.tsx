@@ -45,7 +45,9 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchForecast() {
       try {
-        const response = await fetch('/api/laundry-forecast');
+        const response = await fetch('/api/laundry-forecast', {
+          next: { revalidate: 7200 }, // Cache for 2 hours
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch forecast');
         }

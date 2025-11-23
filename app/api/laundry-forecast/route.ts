@@ -215,7 +215,11 @@ WICHTIG: Bei gleicher Regenwahrscheinlichkeit gewinnt der Tag mit niedrigerer Lu
 
     console.log('[LaundryForecast] Forecast generated successfully');
 
-    return NextResponse.json(forecast);
+    return NextResponse.json(forecast, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=7200, stale-while-revalidate=3600',
+      },
+    });
   } catch (error) {
     console.error('[LaundryForecast] Error generating forecast:', error);
 
