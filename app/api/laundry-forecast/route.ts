@@ -116,21 +116,30 @@ export async function GET() {
     const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
     // Create prompt for AI
-    const systemPrompt = `Du bist ein Wetter-Experte. Analysiere Wettervorhersagen und bewerte ALLE Tage zum Wäsche draussen aufhängen.
+    const systemPrompt = `Du bist ein Wetter-Experte. Bewerte ALLE Tage zum Wäsche draussen aufhängen nach einem strikten Scoring-System.
 
-WICHTIGE KRITERIEN (in dieser Reihenfolge):
-1. KEIN oder sehr wenig Regen (niedrige Regenwahrscheinlichkeit)
-2. NIEDRIGE Luftfeuchtigkeit (für schnelles Trocknen)
-3. Moderate Windgeschwindigkeit (nicht zu stark)
-4. Angenehme Temperatur
+BEWERTUNGSFORMEL (streng einhalten!):
+Score = (100 - Regenwahrscheinlichkeit %) × 2 + (100 - Luftfeuchtigkeit %) × 1
 
-ZEITFENSTER: Nur zwischen 06:00 und 18:00 Uhr relevant (nicht nachts).
+WICHTIG: Der Tag mit dem HÖCHSTEN Score ist der BESTE Tag!
 
-BEWERTUNG:
-- "excellent": Perfekte Bedingungen (< 20% Regen, < 70% Luftfeuchtigkeit)
-- "good": Gute Bedingungen (< 40% Regen, < 80% Luftfeuchtigkeit)
-- "fair": Akzeptable Bedingungen (< 60% Regen)
-- "poor": Nicht empfohlen (> 60% Regen oder > 85% Luftfeuchtigkeit)
+BEISPIELE:
+- Tag A: 0% Regen, 83% Luftf. → Score = (100-0)×2 + (100-83)×1 = 200 + 17 = 217
+- Tag B: 20% Regen, 97% Luftf. → Score = (100-20)×2 + (100-97)×1 = 160 + 3 = 163
+→ Tag A ist BESSER (höherer Score)
+
+PRIORITÄT (nach Wichtigkeit):
+1. **REGEN** - Je niedriger, desto besser (wichtigster Faktor!)
+2. **LUFTFEUCHTIGKEIT** - Je niedriger, desto schneller trocknet Wäsche
+3. Temperatur - Nur relevant bei sonst gleichen Bedingungen
+
+ZEITFENSTER: Nur 06:00-18:00 Uhr relevant.
+
+RATING basierend auf Score:
+- "excellent": Score ≥ 210 (z.B. 0-10% Regen UND < 70% Luftf.)
+- "good": Score 180-209 (z.B. 0-25% Regen UND < 80% Luftf.)
+- "fair": Score 150-179 (z.B. 25-50% Regen ODER 80-85% Luftf.)
+- "poor": Score < 150 (> 50% Regen ODER > 85% Luftf.)
 
 ANTWORTE NUR mit einem JSON-Objekt in diesem exakten Format:
 {
@@ -161,9 +170,13 @@ ANTWORTE NUR mit einem JSON-Objekt in diesem exakten Format:
     const userPrompt = `WETTERDATEN für die nächsten 5 Tage:
 ${JSON.stringify(forecastData, null, 2)}
 
-Analysiere diese Daten und gib:
-1. Den besten Tag zum Wäsche aufhängen
-2. ALLE 5 Tage mit Bewertung (rating) sortiert nach Datum`;
+AUFGABE:
+1. Berechne für JEDEN Tag den Score: (100 - rainProbability) × 2 + (100 - humidity) × 1
+2. Wähle den Tag mit dem HÖCHSTEN Score als bestDay
+3. Gib ALLE 5 Tage zurück, sortiert nach Datum (nicht nach Score!)
+4. Vergebe rating basierend auf Score (siehe System-Prompt)
+
+WICHTIG: Bei gleicher Regenwahrscheinlichkeit gewinnt der Tag mit niedrigerer Luftfeuchtigkeit!`;
 
     // Call OpenAI API
     let completion;
