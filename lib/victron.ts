@@ -19,6 +19,8 @@ export async function loginToVictron(
   username: string,
   password: string
 ): Promise<string> {
+  console.log('Attempting Victron login for user:', username);
+
   const response = await fetch(`${VRM_API_BASE}/auth/login`, {
     method: 'POST',
     headers: {
@@ -28,10 +30,13 @@ export async function loginToVictron(
   });
 
   if (!response.ok) {
-    throw new Error(`Victron login failed: ${response.statusText}`);
+    const errorText = await response.text();
+    console.error('Victron login failed:', response.status, errorText);
+    throw new Error(`Victron login failed: ${response.status} - ${errorText}`);
   }
 
   const data: VictronTokenResponse = await response.json();
+  console.log('Victron login successful, token received');
   return data.token;
 }
 

@@ -12,6 +12,7 @@ export const revalidate = 300; // Revalidate every 5 minutes
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('[API] Victron stats request received');
     const { searchParams } = new URL(request.url);
 
     const interval = searchParams.get('interval') || '15mins';
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
     const start = searchParams.get('start') || undefined;
 
     const installationId = process.env.VICTRON_INSTALLATION_ID;
+    console.log('[API] Installation ID:', installationId ? 'SET' : 'NOT SET');
 
     if (!installationId) {
       return NextResponse.json(
@@ -27,10 +29,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log('[API] Fetching stats with params:', { interval, type, start });
+
     // Fetch data with automatic token refresh
     const stats = await fetchWithTokenRefresh((token) =>
       fetchVictronStats(installationId, token, interval, type, start)
     );
+
+    console.log('[API] Stats fetched successfully');
 
     // Process data for easier consumption
     const processedData = processSolarData(stats);
@@ -41,7 +47,7 @@ export async function GET(request: NextRequest) {
       timestamp: Date.now(),
     });
   } catch (error) {
-    console.error('Victron API Error:', error);
+    console.error('[API] Victron API Error:', error);
     return NextResponse.json(
       {
         error: 'Failed to fetch Victron data',

@@ -14,23 +14,27 @@ const TOKEN_TTL = 3600; // 1 hour in seconds
  * First tries MongoDB, then falls back to login
  */
 export async function getVictronToken(): Promise<string> {
+  console.log('[Token] Getting Victron token...');
   try {
     await dbConnect();
+    console.log('[Token] MongoDB connected');
 
     // Try to get token from MongoDB
     const tokenDoc = await Token.findOne();
 
     if (tokenDoc && tokenDoc.expiresAt > new Date()) {
-      console.log('Using stored Victron token from MongoDB');
+      console.log('[Token] Using stored token from MongoDB, expires at:', tokenDoc.expiresAt);
       return tokenDoc.accessToken;
     }
 
     // Token expired or doesn't exist
     if (tokenDoc) {
-      console.log('Token expired, refreshing...');
+      console.log('[Token] Token expired, refreshing...');
+    } else {
+      console.log('[Token] No token found in MongoDB, generating new one...');
     }
   } catch (error) {
-    console.warn('MongoDB not available, will generate new token:', error);
+    console.error('[Token] MongoDB error:', error);
   }
 
   // No valid stored token, login and get new token
@@ -45,11 +49,14 @@ export async function refreshVictronToken(): Promise<string> {
   const username = process.env.VICTRON_USERNAME;
   const password = process.env.VICTRON_PASSWORD;
 
+  console.log('[Token] Refresh - Username:', username ? 'SET' : 'NOT SET');
+  console.log('[Token] Refresh - Password:', password ? 'SET' : 'NOT SET');
+
   if (!username || !password) {
     throw new Error('VICTRON_USERNAME and VICTRON_PASSWORD must be set');
   }
 
-  console.log('Refreshing Victron token via login...');
+  console.log('[Token] Refreshing Victron token via login...');
   const newToken = await loginToVictron(username, password);
 
   // Calculate expiration time
@@ -63,9 +70,9 @@ export async function refreshVictronToken(): Promise<string> {
       { accessToken: newToken, expiresAt },
       { upsert: true }
     );
-    console.log('New Victron token stored in MongoDB');
+    console.log('[Token] New token stored in MongoDB, expires at:', expiresAt);
   } catch (error) {
-    console.warn('Could not store token in MongoDB:', error);
+    console.error('[Token] Could not store token in MongoDB:', error);
   }
 
   return newToken;
