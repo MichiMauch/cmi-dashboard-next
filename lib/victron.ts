@@ -107,18 +107,42 @@ export function processSolarData(stats: VictronStatsResponse): SolarData {
   };
 
   // Sum all values from today (like the old project does)
-  const getTodaySum = (dataPoints?: Array<[number, number, number, number]>) => {
-    if (!dataPoints || dataPoints.length === 0) return 0;
+  const getTodaySum = (dataPoints?: Array<any>) => {
+    if (!dataPoints || dataPoints.length === 0) {
+      console.log('[getTodaySum] No data points provided or empty array');
+      return 0;
+    }
+
+    console.log('[getTodaySum] Sample data point:', dataPoints[0]);
+    console.log('[getTodaySum] Total data points:', dataPoints.length);
 
     const today = new Date().setHours(0, 0, 0, 0);
+    console.log('[getTodaySum] Today timestamp (midnight):', today);
 
-    return dataPoints
-      .filter(([timestamp]) => {
-        // Timestamps from API are in milliseconds (Unix timestamp * 1000)
-        const recordDate = new Date(timestamp * 1000).setHours(0, 0, 0, 0);
-        return recordDate === today;
-      })
-      .reduce((sum, [, value]) => sum + value, 0);
+    // Try both possible formats: with and without *1000
+    const filtered = dataPoints.filter(([timestamp]) => {
+      // Try timestamp as-is first (might already be in milliseconds)
+      let recordDate1 = new Date(timestamp).setHours(0, 0, 0, 0);
+      // Try timestamp * 1000 (if in seconds)
+      let recordDate2 = new Date(timestamp * 1000).setHours(0, 0, 0, 0);
+
+      return recordDate1 === today || recordDate2 === today;
+    });
+
+    console.log('[getTodaySum] Filtered data points for today:', filtered.length);
+
+    if (filtered.length > 0) {
+      console.log('[getTodaySum] Sample filtered point:', filtered[0]);
+    }
+
+    const sum = filtered.reduce((sum, point) => {
+      // Handle both [timestamp, value] and [timestamp, value, ..., ...]
+      const value = point[1] || 0;
+      return sum + value;
+    }, 0);
+
+    console.log('[getTodaySum] Sum result:', sum);
+    return sum;
   };
 
   const processedData = {
