@@ -47,13 +47,15 @@ export async function fetchVictronStats(
   installationId: string,
   token: string,
   interval: string = '15mins',
-  type: string = 'live_feed',
-  start?: string
+  type?: string,
+  start?: string,
+  end?: string
 ): Promise<VictronStatsResponse> {
   const params = new URLSearchParams({
     interval,
-    type,
+    ...(type && { type }),
     ...(start && { start }),
+    ...(end && { end }),
   });
 
   const url = `${VRM_API_BASE}/installations/${installationId}/stats?${params.toString()}`;

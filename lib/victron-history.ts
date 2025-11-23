@@ -109,8 +109,9 @@ export async function fetchLast7Days(): Promise<DayStats[]> {
     timestamps.map(async ({ start, end }) => {
       console.log('[fetchLast7Days] Fetching day:', new Date(start * 1000).toISOString());
 
+      // Use interval=days without type parameter to get daily aggregated data
       const stats = await fetchWithTokenRefresh((token) =>
-        fetchVictronStats(INSTALLATION_ID, token, '15mins', 'live_feed', start.toString())
+        fetchVictronStats(INSTALLATION_ID, token, 'days', undefined, start.toString(), end.toString())
       );
 
       console.log('[fetchLast7Days] Response keys:', Object.keys(stats.records));
@@ -122,48 +123,19 @@ export async function fetchLast7Days(): Promise<DayStats[]> {
 
       const records = stats.records;
 
-      // Calculate peak power for the day
+      // Calculate peak power for the day (max value from Pdc array)
       let peakPower = 0;
       if (records.Pdc && Array.isArray(records.Pdc) && records.Pdc.length > 0) {
         peakPower = Math.max(...records.Pdc.map((item) => item[1]));
       }
 
-      // Calculate deltas for cumulative values (end - start of day)
-      let totalSolarYield = 0;
-      let totalConsumption = 0;
-      let totalEnergyImported = 0;
-      let totalEnergyExported = 0;
-
-      if (records.total_solar_yield && Array.isArray(records.total_solar_yield) && records.total_solar_yield.length > 0) {
-        const firstValue = records.total_solar_yield[0][1];
-        const lastValue = records.total_solar_yield[records.total_solar_yield.length - 1][1];
-        totalSolarYield = lastValue - firstValue;
-      }
-
-      if (records.total_consumption && Array.isArray(records.total_consumption) && records.total_consumption.length > 0) {
-        const firstValue = records.total_consumption[0][1];
-        const lastValue = records.total_consumption[records.total_consumption.length - 1][1];
-        totalConsumption = lastValue - firstValue;
-      }
-
-      if (records.total_energy_imported && Array.isArray(records.total_energy_imported) && records.total_energy_imported.length > 0) {
-        const firstValue = records.total_energy_imported[0][1];
-        const lastValue = records.total_energy_imported[records.total_energy_imported.length - 1][1];
-        totalEnergyImported = lastValue - firstValue;
-      }
-
-      if (records.total_energy_exported && Array.isArray(records.total_energy_exported) && records.total_energy_exported.length > 0) {
-        const firstValue = records.total_energy_exported[0][1];
-        const lastValue = records.total_energy_exported[records.total_energy_exported.length - 1][1];
-        totalEnergyExported = lastValue - firstValue;
-      }
-
-      // Calculate average power from Pdc values
-      let averagePower = 0;
-      if (records.Pdc && Array.isArray(records.Pdc) && records.Pdc.length > 0) {
-        const sum = records.Pdc.reduce((acc, item) => acc + item[1], 0);
-        averagePower = sum / records.Pdc.length;
-      }
+      // Extract aggregated values from API response (pre-calculated by Victron API)
+      // For interval=days, the API returns a single aggregated value at [0][1]
+      const totalSolarYield = records.total_solar_yield?.[0]?.[1] ?? 0;
+      const totalConsumption = records.total_consumption?.[0]?.[1] ?? 0;
+      const averagePower = records.average_power?.[0]?.[1] ?? 0;
+      const totalEnergyImported = records.total_energy_imported?.[0]?.[1] ?? 0;
+      const totalEnergyExported = records.total_energy_exported?.[0]?.[1] ?? 0;
 
       return {
         timestamp: start * 1000,
@@ -190,9 +162,9 @@ export async function fetchLast24Months(): Promise<MonthStats[]> {
     timestamps.map(async ({ start, end }) => {
       console.log('[fetchLast24Months] Fetching month:', new Date(start * 1000).toISOString());
 
-      // Fetch data for the entire month using live_feed
+      // Use interval=months without type parameter to get monthly aggregated data
       const stats = await fetchWithTokenRefresh((token) =>
-        fetchVictronStats(INSTALLATION_ID, token, 'days', 'live_feed', start.toString())
+        fetchVictronStats(INSTALLATION_ID, token, 'months', undefined, start.toString(), end.toString())
       );
 
       console.log('[fetchLast24Months] Response keys:', Object.keys(stats.records));
@@ -202,28 +174,11 @@ export async function fetchLast24Months(): Promise<MonthStats[]> {
 
       const records = stats.records;
 
-      // Calculate deltas for cumulative values (end - start of month)
-      let totalSolarYield = 0;
-      let totalConsumption = 0;
-      let gridHistoryFrom = 0;
-
-      if (records.total_solar_yield && Array.isArray(records.total_solar_yield) && records.total_solar_yield.length > 0) {
-        const firstValue = records.total_solar_yield[0][1];
-        const lastValue = records.total_solar_yield[records.total_solar_yield.length - 1][1];
-        totalSolarYield = lastValue - firstValue;
-      }
-
-      if (records.total_consumption && Array.isArray(records.total_consumption) && records.total_consumption.length > 0) {
-        const firstValue = records.total_consumption[0][1];
-        const lastValue = records.total_consumption[records.total_consumption.length - 1][1];
-        totalConsumption = lastValue - firstValue;
-      }
-
-      if (records.grid_history_from && Array.isArray(records.grid_history_from) && records.grid_history_from.length > 0) {
-        const firstValue = records.grid_history_from[0][1];
-        const lastValue = records.grid_history_from[records.grid_history_from.length - 1][1];
-        gridHistoryFrom = lastValue - firstValue;
-      }
+      // Extract aggregated values from API response (pre-calculated by Victron API)
+      // For interval=months, the API returns a single aggregated value at [0][1]
+      const totalSolarYield = records.total_solar_yield?.[0]?.[1] ?? 0;
+      const totalConsumption = records.total_consumption?.[0]?.[1] ?? 0;
+      const gridHistoryFrom = records.grid_history_from?.[0]?.[1] ?? 0;
 
       return {
         timestamp: start,
@@ -247,36 +202,26 @@ export async function fetchAutarkieStats(): Promise<AutarkieStats> {
 
   const results = await Promise.all(
     timestamps.map(async ({ start, end }) => {
+      // Use interval=months without type parameter to get monthly aggregated data
       const stats = await fetchWithTokenRefresh((token) =>
-        fetchVictronStats(INSTALLATION_ID, token, 'days', 'live_feed', start.toString())
+        fetchVictronStats(INSTALLATION_ID, token, 'months', undefined, start.toString(), end.toString())
       );
 
       console.log('[fetchAutarkieStats] Month response keys:', Object.keys(stats.records));
 
       const records = stats.records;
 
-      // Calculate deltas for cumulative values (end - start of month)
-      let monthSolarYield = 0;
-      let monthConsumption = 0;
-      let monthGridHistoryFrom = 0;
+      // Extract aggregated values from API response (pre-calculated by Victron API)
+      // For interval=months, the API returns a single aggregated value at [0][1]
+      const monthSolarYield = records.total_solar_yield?.[0]?.[1] ?? 0;
+      const monthConsumption = records.total_consumption?.[0]?.[1] ?? 0;
+      const monthGridHistoryFrom = records.grid_history_from?.[0]?.[1] ?? 0;
 
-      if (records.total_solar_yield && Array.isArray(records.total_solar_yield) && records.total_solar_yield.length > 0) {
-        const firstValue = records.total_solar_yield[0][1];
-        const lastValue = records.total_solar_yield[records.total_solar_yield.length - 1][1];
-        monthSolarYield = lastValue - firstValue;
-      }
-
-      if (records.total_consumption && Array.isArray(records.total_consumption) && records.total_consumption.length > 0) {
-        const firstValue = records.total_consumption[0][1];
-        const lastValue = records.total_consumption[records.total_consumption.length - 1][1];
-        monthConsumption = lastValue - firstValue;
-      }
-
-      if (records.grid_history_from && Array.isArray(records.grid_history_from) && records.grid_history_from.length > 0) {
-        const firstValue = records.grid_history_from[0][1];
-        const lastValue = records.grid_history_from[records.grid_history_from.length - 1][1];
-        monthGridHistoryFrom = lastValue - firstValue;
-      }
+      console.log('[fetchAutarkieStats] Month data:', {
+        solar_yield: monthSolarYield,
+        consumption: monthConsumption,
+        grid_from: monthGridHistoryFrom,
+      });
 
       return {
         solar_yield: monthSolarYield,
@@ -329,7 +274,7 @@ export async function fetchLast30DaysPeakPower(): Promise<PeakPowerHistoryStats[
   const results = await Promise.all(
     timestamps.map(async ({ start, end }) => {
       const stats = await fetchWithTokenRefresh((token) =>
-        fetchVictronStats(INSTALLATION_ID, token, '15mins', 'live_feed', start.toString())
+        fetchVictronStats(INSTALLATION_ID, token, '15mins', 'live_feed', start.toString(), end.toString())
       );
 
       const records = stats.records;

@@ -31,11 +31,12 @@ export async function GET(request: NextRequest) {
     }
 
     const start = getTimestampForToday();
+    const end = Math.floor(Date.now() / 1000); // Current time in seconds
     console.log('[PeakAPI] Fetching peak power for today starting at:', new Date(start * 1000).toISOString());
 
     // Fetch today's data with 15-minute intervals
     const stats = await fetchWithTokenRefresh((token) =>
-      fetchVictronStats(installationId, token, '15mins', 'live_feed', start.toString())
+      fetchVictronStats(installationId, token, '15mins', 'live_feed', start.toString(), end.toString())
     );
 
     const records = stats.records;
