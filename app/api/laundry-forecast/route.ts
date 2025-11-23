@@ -1,13 +1,13 @@
 /**
  * Laundry Forecast API Route
- * Uses Google Gemini AI to analyze weather data and recommend best day to hang laundry
+ * Uses OpenAI to analyze weather data and recommend best day to hang laundry
  */
 
 import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import OpenAI from 'openai';
 import type { ProcessedWeatherData } from '@/types/weather';
 
-const GOOGLE_AI_API_KEY = process.env.GOOGLE_AI_API_KEY;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 interface LaundryForecast {
   bestDay: {
@@ -57,10 +57,10 @@ function prepareWeatherDataForAI(weatherData: ProcessedWeatherData) {
 export async function GET() {
   try {
     // Check API key
-    if (!GOOGLE_AI_API_KEY) {
-      console.error('[LaundryForecast] GOOGLE_AI_API_KEY not configured');
+    if (!OPENAI_API_KEY) {
+      console.error('[LaundryForecast] OPENAI_API_KEY not configured');
       return NextResponse.json(
-        { error: 'GOOGLE_AI_API_KEY not configured in environment variables' },
+        { error: 'OPENAI_API_KEY not configured in environment variables' },
         { status: 500 }
       );
     }
@@ -99,13 +99,13 @@ export async function GET() {
     // Prepare data for AI
     const forecastData = prepareWeatherDataForAI(weatherData);
 
-    console.log('[LaundryForecast] Sending data to Gemini AI...');
+    console.log('[LaundryForecast] Sending data to OpenAI...');
 
-    // Initialize Google Gemini AI
-    const genAI = new GoogleGenAI({ apiKey: GOOGLE_AI_API_KEY });
+    // Initialize OpenAI
+    const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
     // Create prompt for AI
-    const prompt = `Du bist ein Wetter-Experte. Analysiere die folgenden 5-Tage Wettervorhersagen und empfehle den BESTEN Tag zum Wäsche draussen aufhängen.
+    const systemPrompt = `Du bist ein Wetter-Experte. Analysiere Wettervorhersagen und empfehle den BESTEN Tag zum Wäsche draussen aufhängen.
 
 WICHTIGE KRITERIEN (in dieser Reihenfolge):
 1. KEIN oder sehr wenig Regen (niedrige Regenwahrscheinlichkeit)
@@ -115,10 +115,7 @@ WICHTIGE KRITERIEN (in dieser Reihenfolge):
 
 ZEITFENSTER: Nur zwischen 06:00 und 18:00 Uhr relevant (nicht nachts).
 
-WETTERDATEN:
-${JSON.stringify(forecastData, null, 2)}
-
-ANTWORTE NUR mit einem JSON-Objekt in diesem exakten Format (keine zusätzlichen Texte):
+ANTWORTE NUR mit einem JSON-Objekt in diesem exakten Format:
 {
   "bestDay": {
     "date": "DD.MM",
@@ -133,37 +130,41 @@ ANTWORTE NUR mit einem JSON-Objekt in diesem exakten Format (keine zusätzlichen
   }
 }`;
 
-    // Call Gemini AI with Free Tier compatible model
-    let result;
+    const userPrompt = `WETTERDATEN für die nächsten 5 Tage:
+${JSON.stringify(forecastData, null, 2)}
+
+Analysiere diese Daten und gib den besten Tag zum Wäsche aufhängen zurück.`;
+
+    // Call OpenAI API
+    let completion;
     try {
-      result = await genAI.models.generateContent({
-        model: 'gemini-1.5-flash', // Free Tier compatible model
-        contents: prompt,
+      completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini', // Fast and cost-effective
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        response_format: { type: 'json_object' }, // Force JSON output
+        temperature: 0.7,
       });
-      console.log('[LaundryForecast] AI response received');
+      console.log('[LaundryForecast] OpenAI response received');
     } catch (aiError) {
-      console.error('[LaundryForecast] Gemini AI error:', aiError);
-      throw new Error(`Gemini AI call failed: ${aiError instanceof Error ? aiError.message : 'Unknown AI error'}`);
+      console.error('[LaundryForecast] OpenAI error:', aiError);
+      throw new Error(`OpenAI API call failed: ${aiError instanceof Error ? aiError.message : 'Unknown AI error'}`);
     }
 
     // Extract and parse response
-    const responseText = result.text || '';
+    const responseText = completion.choices[0]?.message?.content || '';
     console.log('[LaundryForecast] Raw AI response:', responseText);
 
     if (!responseText) {
-      throw new Error('Empty response from AI');
+      throw new Error('Empty response from OpenAI');
     }
 
-    // Try to extract JSON from response (in case AI added extra text)
+    // Parse JSON response
     let forecast: LaundryForecast;
     try {
-      // Remove markdown code blocks if present
-      const cleanedResponse = responseText
-        .replace(/```json\n?/g, '')
-        .replace(/```\n?/g, '')
-        .trim();
-
-      forecast = JSON.parse(cleanedResponse);
+      forecast = JSON.parse(responseText);
     } catch (parseError) {
       console.error('[LaundryForecast] Failed to parse AI response:', parseError);
       throw new Error('Failed to parse AI response');
