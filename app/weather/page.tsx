@@ -38,32 +38,43 @@ function formatTime(timestamp: number): string {
 /**
  * Fetch weather data
  */
-async function getWeatherData(): Promise<ProcessedWeatherData | null> {
+async function getWeatherData(): Promise<ProcessedWeatherData | { error: string } | null> {
   try {
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
+    // Use absolute URL for production, relative for development
+    const baseUrl = process.env.NODE_ENV === 'production'
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'cmi-dashboard-next.vercel.app'}`
       : 'http://localhost:3000';
+
+    console.log('[WeatherPage] Fetching from:', `${baseUrl}/api/weather`);
 
     const response = await fetch(`${baseUrl}/api/weather`, {
       next: { revalidate: 600 },
+      cache: 'no-store', // Force fresh data for debugging
     });
 
+    console.log('[WeatherPage] Response status:', response.status);
+
     if (!response.ok) {
-      console.error('[WeatherPage] Failed to fetch weather data:', response.statusText);
-      return null;
+      const errorData = await response.json().catch(() => ({ error: response.statusText }));
+      console.error('[WeatherPage] API error:', errorData);
+      return errorData;
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log('[WeatherPage] Data received successfully');
+    return data;
   } catch (error) {
-    console.error('[WeatherPage] Error fetching weather data:', error);
-    return null;
+    console.error('[WeatherPage] Fetch error:', error);
+    return { error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
 export default async function WeatherPage() {
   const weatherData = await getWeatherData();
 
-  if (!weatherData) {
+  if (!weatherData || 'error' in weatherData) {
+    const errorMessage = weatherData && 'error' in weatherData ? weatherData.error : 'Unbekannter Fehler';
+
     return (
       <Container maxWidth="md">
         <Box sx={{ my: 8, textAlign: 'center' }}>
@@ -71,8 +82,21 @@ export default async function WeatherPage() {
             ⚠️ Wetterdaten nicht verfügbar
           </Typography>
           <Typography color="text.secondary" paragraph>
-            Die Wetterdaten konnten nicht geladen werden. Bitte prüfe die API-Konfiguration.
+            Die Wetterdaten konnten nicht geladen werden.
           </Typography>
+          <Box
+            sx={{
+              mt: 2,
+              p: 2,
+              bgcolor: 'error.main',
+              color: 'error.contrastText',
+              borderRadius: 1,
+              fontFamily: 'monospace',
+              fontSize: '0.875rem',
+            }}
+          >
+            Fehler: {errorMessage}
+          </Box>
           <Box
             sx={{
               mt: 2,
@@ -83,7 +107,12 @@ export default async function WeatherPage() {
               fontSize: '0.875rem',
             }}
           >
-            Stelle sicher, dass OPENWEATHER_API_KEY in den Umgebungsvariablen gesetzt ist.
+            <strong>Mögliche Ursachen:</strong>
+            <ul style={{ textAlign: 'left', marginTop: 8 }}>
+              <li>OPENWEATHER_API_KEY nicht gesetzt oder ungültig</li>
+              <li>API Rate Limit erreicht (60 calls/min im Free Plan)</li>
+              <li>Nach Setzen der Variable: Redeploy erforderlich</li>
+            </ul>
           </Box>
         </Box>
       </Container>

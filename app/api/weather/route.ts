@@ -46,26 +46,44 @@ function formatDate(timestamp: number): string {
 
 export async function GET() {
   try {
+    // Check API key presence (show only first/last chars for security)
     if (!API_KEY) {
       console.error('[Weather] OPENWEATHER_API_KEY not configured');
       return NextResponse.json(
-        { error: 'OPENWEATHER_API_KEY not configured' },
+        { error: 'OPENWEATHER_API_KEY not configured in environment variables' },
         { status: 500 }
       );
     }
 
+    console.log('[Weather] API Key loaded:', `${API_KEY.substring(0, 4)}...${API_KEY.substring(API_KEY.length - 4)}`);
     console.log('[Weather] Fetching weather data for', LOCATION);
+
+    const currentUrl = `${BASE_URL}/weather?q=${LOCATION}&appid=${API_KEY}&units=metric&lang=de`;
+    const forecastUrl = `${BASE_URL}/forecast?q=${LOCATION}&appid=${API_KEY}&units=metric&lang=de`;
 
     // Fetch current weather and forecast in parallel
     const [currentResponse, forecastResponse] = await Promise.all([
-      fetch(`${BASE_URL}/weather?q=${LOCATION}&appid=${API_KEY}&units=metric&lang=de`),
-      fetch(`${BASE_URL}/forecast?q=${LOCATION}&appid=${API_KEY}&units=metric&lang=de`),
+      fetch(currentUrl),
+      fetch(forecastUrl),
     ]);
 
+    console.log('[Weather] Current API status:', currentResponse.status);
+    console.log('[Weather] Forecast API status:', forecastResponse.status);
+
     if (!currentResponse.ok || !forecastResponse.ok) {
+      const currentError = !currentResponse.ok ? await currentResponse.text() : null;
+      const forecastError = !forecastResponse.ok ? await forecastResponse.text() : null;
+
       console.error('[Weather] API request failed');
+      console.error('[Weather] Current error:', currentError);
+      console.error('[Weather] Forecast error:', forecastError);
+
       return NextResponse.json(
-        { error: 'Failed to fetch weather data' },
+        {
+          error: 'OpenWeather API request failed',
+          details: currentError || forecastError,
+          status: currentResponse.status || forecastResponse.status,
+        },
         { status: currentResponse.status || forecastResponse.status }
       );
     }
