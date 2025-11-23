@@ -22,30 +22,45 @@ async function getSolarData() {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch solar data');
+      const errorText = await response.text();
+      console.error('Solar API Error:', response.status, errorText);
+      throw new Error(`Failed to fetch solar data: ${response.status}`);
     }
 
     return response.json();
   } catch (error) {
     console.error('Error fetching solar data:', error);
-    return null;
+    return { error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
 export default async function SolarPage() {
   const solarData = await getSolarData();
 
-  if (!solarData) {
+  if (!solarData || 'error' in solarData) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-2xl">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-4">
             ⚠️ Solar-Daten nicht verfügbar
           </h1>
-          <p className="text-slate-600 dark:text-slate-400">
-            Bitte prüfen Sie die Victron API Konfiguration und stellen Sie sicher,
-            dass Vercel KV eingerichtet ist.
+          <p className="text-slate-600 dark:text-slate-400 mb-4">
+            Die Victron API kann derzeit nicht erreicht werden.
           </p>
+          {'error' in solarData && (
+            <p className="text-sm text-red-600 dark:text-red-400 font-mono bg-slate-100 dark:bg-slate-800 p-4 rounded">
+              {solarData.error}
+            </p>
+          )}
+          <div className="mt-6 text-left text-sm text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 p-4 rounded">
+            <p className="font-semibold mb-2">Bitte prüfen Sie auf Vercel:</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>MONGODB_URI ist korrekt gesetzt</li>
+              <li>VICTRON_USERNAME ist gesetzt</li>
+              <li>VICTRON_PASSWORD ist gesetzt</li>
+              <li>VICTRON_INSTALLATION_ID ist gesetzt</li>
+            </ul>
+          </div>
         </div>
       </div>
     );
