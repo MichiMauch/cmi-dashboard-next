@@ -8,28 +8,38 @@ import { PowerDisplay } from '@/components/solar/power-display';
 import { ConsumptionDisplay } from '@/components/solar/consumption-display';
 import { GridPowerDisplay } from '@/components/solar/grid-power-display';
 import { BatteryPowerDisplay } from '@/components/solar/battery-power-display';
+import { fetchVictronStats, processSolarData } from '@/lib/victron';
+import { fetchWithTokenRefresh } from '@/lib/victron-token';
 
 export const revalidate = 300; // Revalidate every 5 minutes
 
 async function getSolarData() {
   try {
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000';
+    const installationId = process.env.VICTRON_INSTALLATION_ID;
 
-    const response = await fetch(`${baseUrl}/api/victron/stats`, {
-      next: { revalidate: 300 },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Solar API Error:', response.status, errorText);
-      throw new Error(`Failed to fetch solar data: ${response.status}`);
+    if (!installationId) {
+      throw new Error('VICTRON_INSTALLATION_ID not configured');
     }
 
-    return response.json();
+    console.log('[SolarPage] Fetching Victron data...');
+
+    // Fetch data directly (no HTTP call needed)
+    const stats = await fetchWithTokenRefresh((token) =>
+      fetchVictronStats(installationId, token, '15mins', 'live_feed')
+    );
+
+    // Process data for easier consumption
+    const processedData = processSolarData(stats);
+
+    console.log('[SolarPage] Data fetched successfully');
+
+    return {
+      raw: stats,
+      processed: processedData,
+      timestamp: Date.now(),
+    };
   } catch (error) {
-    console.error('Error fetching solar data:', error);
+    console.error('[SolarPage] Error fetching solar data:', error);
     return { error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
