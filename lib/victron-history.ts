@@ -21,6 +21,8 @@ export interface DayStats {
 export interface MonthStats {
   timestamp: number;
   total_solar_yield: number;
+  total_consumption: number;
+  grid_history_from: number;
 }
 
 export interface AutarkieStats {
@@ -28,6 +30,11 @@ export interface AutarkieStats {
   total_consumption: number;
   grid_history_from: number;
   autarkie: number;
+}
+
+export interface PeakPowerHistoryStats {
+  timestamp: number;
+  peak_power: number;
 }
 
 /**
@@ -153,10 +160,14 @@ export async function fetchLast24Months(): Promise<MonthStats[]> {
 
       console.log('[fetchLast24Months] Response keys:', Object.keys(stats.records));
       console.log('[fetchLast24Months] total_solar_yield:', stats.records?.total_solar_yield);
+      console.log('[fetchLast24Months] total_consumption:', stats.records?.total_consumption);
+      console.log('[fetchLast24Months] grid_history_from:', stats.records?.grid_history_from);
 
       return {
         timestamp: start,
         total_solar_yield: stats.records?.total_solar_yield?.[0]?.[1] ?? 0,
+        total_consumption: stats.records?.total_consumption?.[0]?.[1] ?? 0,
+        grid_history_from: stats.records?.grid_history_from?.[0]?.[1] ?? 0,
       };
     })
   );
@@ -224,4 +235,43 @@ export async function fetchAutarkieStats(): Promise<AutarkieStats> {
     grid_history_from: gridHistoryFrom,
     autarkie: parseFloat(autarkie.toFixed(2)),
   };
+}
+
+/**
+ * Fetch peak power for last 30 days
+ */
+export async function fetchLast30DaysPeakPower(): Promise<PeakPowerHistoryStats[]> {
+  const timestamps = getLastNDaysTimestamps(30);
+
+  console.log('[fetchLast30DaysPeakPower] Fetching peak power for 30 days');
+
+  const results = await Promise.all(
+    timestamps.map(async ({ start, end }) => {
+      const stats = await fetchWithTokenRefresh((token) =>
+        fetchVictronStats(INSTALLATION_ID, token, '15mins', 'live_feed', start.toString())
+      );
+
+      const records = stats.records;
+
+      // Find the highest Pdc (solar power) value for the day
+      if (!records.Pdc || !Array.isArray(records.Pdc) || records.Pdc.length === 0) {
+        return {
+          timestamp: start * 1000, // Convert to milliseconds
+          peak_power: 0,
+        };
+      }
+
+      const peakPowerEntry = records.Pdc.reduce(
+        (max, entry) => (entry[1] > max[1] ? entry : max),
+        [0, 0]
+      );
+
+      return {
+        timestamp: peakPowerEntry[0] * 1000, // Convert to milliseconds
+        peak_power: peakPowerEntry[1],
+      };
+    })
+  );
+
+  return results;
 }

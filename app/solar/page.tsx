@@ -6,15 +6,23 @@
 import { BatteryDisplay } from '@/components/solar/battery-display';
 import { PowerDisplay } from '@/components/solar/power-display';
 import { ConsumptionDisplay } from '@/components/solar/consumption-display';
+import { PeakPowerDisplay } from '@/components/solar/peak-power-display';
 import { SolarYieldDisplay } from '@/components/solar/solar-yield-display';
 import { AutarkieDisplay } from '@/components/solar/autarkie-display';
+import { YearSolarYieldDisplay } from '@/components/solar/year-solar-yield-display';
+import { YearConsumptionDisplay } from '@/components/solar/year-consumption-display';
+import { YearGridImportDisplay } from '@/components/solar/year-grid-import-display';
 import { MonthlyYieldChart } from '@/components/solar/monthly-yield-chart';
+import { MonthlyDataDisplay } from '@/components/solar/monthly-data-display';
+import { PeakPowerChart } from '@/components/solar/peak-power-chart';
+import { GridImportChart } from '@/components/solar/grid-import-chart';
 import { fetchVictronStats, processSolarData } from '@/lib/victron';
 import { fetchWithTokenRefresh } from '@/lib/victron-token';
 import {
   fetchLast7Days,
   fetchLast24Months,
   fetchAutarkieStats,
+  fetchLast30DaysPeakPower,
 } from '@/lib/victron-history';
 
 export const revalidate = 300; // Revalidate every 5 minutes
@@ -52,7 +60,7 @@ async function getSolarData() {
 
 export default async function SolarPage() {
   // Fetch all data in parallel
-  const [solarData, last7Days, last24Months, autarkieStats] = await Promise.all([
+  const [solarData, last7Days, last24Months, autarkieStats, peakPowerHistory] = await Promise.all([
     getSolarData(),
     fetchLast7Days().catch((err) => {
       console.error('[SolarPage] Error fetching last 7 days:', err);
@@ -65,6 +73,10 @@ export default async function SolarPage() {
     fetchAutarkieStats().catch((err) => {
       console.error('[SolarPage] Error fetching autarkie stats:', err);
       return null;
+    }),
+    fetchLast30DaysPeakPower().catch((err) => {
+      console.error('[SolarPage] Error fetching peak power history:', err);
+      return [];
     }),
   ]);
 
@@ -147,11 +159,12 @@ export default async function SolarPage() {
         </div>
 
         {/* Power Flow Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <PowerDisplay power={processed.currentPower} />
           <ConsumptionDisplay
             todayConsumption={processed.todayConsumption}
           />
+          <PeakPowerDisplay />
         </div>
 
         {/* Battery Status and Autarkie */}
@@ -166,6 +179,15 @@ export default async function SolarPage() {
           )}
         </div>
 
+        {/* Year Statistics Cards */}
+        {autarkieStats && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <YearSolarYieldDisplay totalYield={autarkieStats.total_solar_yield} />
+            <YearConsumptionDisplay totalConsumption={autarkieStats.total_consumption} />
+            <YearGridImportDisplay gridImport={autarkieStats.grid_history_from} />
+          </div>
+        )}
+
         {/* Historical Data Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Last 7 Days */}
@@ -178,13 +200,36 @@ export default async function SolarPage() {
             </div>
           )}
 
-          {/* Monthly Chart */}
+          {/* Monthly Data Table */}
           {last24Months.length > 0 && (
-            <div className="lg:col-span-1">
-              <MonthlyYieldChart data={last24Months} />
+            <div>
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                Monatliche Daten
+              </h3>
+              <MonthlyDataDisplay data={last24Months} />
             </div>
           )}
         </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Monthly Yield Chart */}
+          {last24Months.length > 0 && (
+            <MonthlyYieldChart data={last24Months} />
+          )}
+
+          {/* Peak Power Chart */}
+          {peakPowerHistory.length > 0 && (
+            <PeakPowerChart data={peakPowerHistory} />
+          )}
+        </div>
+
+        {/* Grid Import Chart */}
+        {last24Months.length > 0 && (
+          <div className="grid grid-cols-1 gap-4">
+            <GridImportChart data={last24Months} />
+          </div>
+        )}
       </div>
     </div>
   );
