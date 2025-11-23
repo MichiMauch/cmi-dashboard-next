@@ -128,26 +128,34 @@ export async function fetchLast7Days(): Promise<DayStats[]> {
         peakPower = Math.max(...records.Pdc.map((item) => item[1]));
       }
 
-      // Get end-of-day values for totals (last entry in the array)
+      // Calculate deltas for cumulative values (end - start of day)
       let totalSolarYield = 0;
       let totalConsumption = 0;
       let totalEnergyImported = 0;
       let totalEnergyExported = 0;
 
       if (records.total_solar_yield && Array.isArray(records.total_solar_yield) && records.total_solar_yield.length > 0) {
-        totalSolarYield = records.total_solar_yield[records.total_solar_yield.length - 1][1];
+        const firstValue = records.total_solar_yield[0][1];
+        const lastValue = records.total_solar_yield[records.total_solar_yield.length - 1][1];
+        totalSolarYield = lastValue - firstValue;
       }
 
       if (records.total_consumption && Array.isArray(records.total_consumption) && records.total_consumption.length > 0) {
-        totalConsumption = records.total_consumption[records.total_consumption.length - 1][1];
+        const firstValue = records.total_consumption[0][1];
+        const lastValue = records.total_consumption[records.total_consumption.length - 1][1];
+        totalConsumption = lastValue - firstValue;
       }
 
       if (records.total_energy_imported && Array.isArray(records.total_energy_imported) && records.total_energy_imported.length > 0) {
-        totalEnergyImported = records.total_energy_imported[records.total_energy_imported.length - 1][1];
+        const firstValue = records.total_energy_imported[0][1];
+        const lastValue = records.total_energy_imported[records.total_energy_imported.length - 1][1];
+        totalEnergyImported = lastValue - firstValue;
       }
 
       if (records.total_energy_exported && Array.isArray(records.total_energy_exported) && records.total_energy_exported.length > 0) {
-        totalEnergyExported = records.total_energy_exported[records.total_energy_exported.length - 1][1];
+        const firstValue = records.total_energy_exported[0][1];
+        const lastValue = records.total_energy_exported[records.total_energy_exported.length - 1][1];
+        totalEnergyExported = lastValue - firstValue;
       }
 
       // Calculate average power from Pdc values
@@ -194,21 +202,27 @@ export async function fetchLast24Months(): Promise<MonthStats[]> {
 
       const records = stats.records;
 
-      // Get end-of-month values for totals (last entry in the array)
+      // Calculate deltas for cumulative values (end - start of month)
       let totalSolarYield = 0;
       let totalConsumption = 0;
       let gridHistoryFrom = 0;
 
       if (records.total_solar_yield && Array.isArray(records.total_solar_yield) && records.total_solar_yield.length > 0) {
-        totalSolarYield = records.total_solar_yield[records.total_solar_yield.length - 1][1];
+        const firstValue = records.total_solar_yield[0][1];
+        const lastValue = records.total_solar_yield[records.total_solar_yield.length - 1][1];
+        totalSolarYield = lastValue - firstValue;
       }
 
       if (records.total_consumption && Array.isArray(records.total_consumption) && records.total_consumption.length > 0) {
-        totalConsumption = records.total_consumption[records.total_consumption.length - 1][1];
+        const firstValue = records.total_consumption[0][1];
+        const lastValue = records.total_consumption[records.total_consumption.length - 1][1];
+        totalConsumption = lastValue - firstValue;
       }
 
       if (records.grid_history_from && Array.isArray(records.grid_history_from) && records.grid_history_from.length > 0) {
-        gridHistoryFrom = records.grid_history_from[records.grid_history_from.length - 1][1];
+        const firstValue = records.grid_history_from[0][1];
+        const lastValue = records.grid_history_from[records.grid_history_from.length - 1][1];
+        gridHistoryFrom = lastValue - firstValue;
       }
 
       return {
@@ -241,21 +255,27 @@ export async function fetchAutarkieStats(): Promise<AutarkieStats> {
 
       const records = stats.records;
 
-      // Get end-of-month values (last entry in the array)
+      // Calculate deltas for cumulative values (end - start of month)
       let monthSolarYield = 0;
       let monthConsumption = 0;
       let monthGridHistoryFrom = 0;
 
       if (records.total_solar_yield && Array.isArray(records.total_solar_yield) && records.total_solar_yield.length > 0) {
-        monthSolarYield = records.total_solar_yield[records.total_solar_yield.length - 1][1];
+        const firstValue = records.total_solar_yield[0][1];
+        const lastValue = records.total_solar_yield[records.total_solar_yield.length - 1][1];
+        monthSolarYield = lastValue - firstValue;
       }
 
       if (records.total_consumption && Array.isArray(records.total_consumption) && records.total_consumption.length > 0) {
-        monthConsumption = records.total_consumption[records.total_consumption.length - 1][1];
+        const firstValue = records.total_consumption[0][1];
+        const lastValue = records.total_consumption[records.total_consumption.length - 1][1];
+        monthConsumption = lastValue - firstValue;
       }
 
       if (records.grid_history_from && Array.isArray(records.grid_history_from) && records.grid_history_from.length > 0) {
-        monthGridHistoryFrom = records.grid_history_from[records.grid_history_from.length - 1][1];
+        const firstValue = records.grid_history_from[0][1];
+        const lastValue = records.grid_history_from[records.grid_history_from.length - 1][1];
+        monthGridHistoryFrom = lastValue - firstValue;
       }
 
       return {
