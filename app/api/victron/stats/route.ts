@@ -8,7 +8,7 @@ import { fetchVictronStats, processSolarData } from '@/lib/victron';
 import { fetchWithTokenRefresh } from '@/lib/victron-token';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 300; // Revalidate every 5 minutes
+export const revalidate = 60; // Revalidate every 1 minute
 
 export async function GET(request: NextRequest) {
   try {

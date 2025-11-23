@@ -98,7 +98,7 @@ export function GaugeCard({
               }}
             >
               <Typography variant="h5" component="div" color={`${gaugeColor}.main`} sx={{ fontWeight: 600 }}>
-                {value}
+                {value.toFixed(1)}
               </Typography>
               {unit && (
                 <Typography variant="caption" color="text.secondary">

@@ -11,23 +11,18 @@ import {
   fetchAutarkieStats,
   fetchLast30DaysPeakPower,
 } from '@/lib/victron-history';
+import { LiveStats } from '@/components/solar/live-stats';
 import { StatCard } from '@/components/shared/stat-card';
-import { MetricCard } from '@/components/shared/metric-card';
-import { GaugeCard } from '@/components/shared/gauge-card';
 import { DataTable, DataTableColumn } from '@/components/shared/data-table';
 import { ChartCard } from '@/components/shared/chart-card';
 import { Container, Typography, Box } from '@mui/material';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { LineChart } from '@mui/x-charts/LineChart';
-import BoltIcon from '@mui/icons-material/Bolt';
-import BatteryChargingFullIcon from '@mui/icons-material/BatteryChargingFull';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';
-import FlashOnIcon from '@mui/icons-material/FlashOn';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ElectricBoltIcon from '@mui/icons-material/ElectricBolt';
 import PowerIcon from '@mui/icons-material/Power';
 
-export const revalidate = 300; // Revalidate every 5 minutes
+export const revalidate = 60; // Revalidate every 1 minute
 
 async function getSolarData() {
   try {
@@ -169,103 +164,12 @@ export default async function SolarPage() {
           </Typography>
         </Box>
 
-        {/* Quick Stats */}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' },
-            gap: 3,
-            mb: 4,
-          }}
-        >
-          <StatCard
-            title="Aktuelle Leistung"
-            value={`${processed.currentPower.toFixed(0)} W`}
-            icon={<BoltIcon />}
-            color="warning"
-          />
-          <StatCard
-            title="Batterieladung"
-            value={`${processed.batteryCharge.toFixed(1)} %`}
-            icon={<BatteryChargingFullIcon />}
-            color="success"
-          />
-          <StatCard
-            title="Heutiger Ertrag"
-            value={`${processed.todayYield.toFixed(2)} kWh`}
-            icon={<WbSunnyIcon />}
-            color="warning"
-          />
-          <StatCard
-            title="Verbrauch Heute"
-            value={`${processed.todayConsumption.toFixed(2)} kWh`}
-            icon={<FlashOnIcon />}
-            color="info"
-          />
-        </Box>
-
-        {/* Power Flow Cards */}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
-            gap: 3,
-            mb: 4,
-          }}
-        >
-          <MetricCard
-            title="Solarleistung"
-            value={processed.currentPower.toFixed(0)}
-            unit="W"
-            icon={<WbSunnyIcon />}
-            color="warning"
-            subtitle={`Heute: ${processed.todayYield.toFixed(2)} kWh`}
-          />
-          <MetricCard
-            title="Verbrauch"
-            value={processed.todayConsumption.toFixed(2)}
-            unit="kWh"
-            icon={<ElectricBoltIcon />}
-            color="info"
-            subtitle="Heute"
-          />
-          <MetricCard
-            title="Spitzenleistung"
-            value={(todayPeak / 1000).toFixed(2)}
-            unit="kW"
-            icon={<PowerIcon />}
-            color="error"
-            subtitle="Heute"
-          />
-        </Box>
-
-        {/* Battery and Autarkie */}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' },
-            gap: 3,
-            mb: 4,
-          }}
-        >
-          <GaugeCard
-            title="Batterieladung"
-            value={processed.batteryCharge}
-            maxValue={100}
-            unit="%"
-            thresholds={{ low: 20, medium: 50, high: 100 }}
-          />
-          {autarkieStats && (
-            <MetricCard
-              title="Autarkie"
-              value={autarkieStats.autarkie.toFixed(1)}
-              unit="%"
-              icon={<CheckCircleIcon />}
-              color="success"
-              subtitle={`${autarkieStats.total_solar_yield.toFixed(0)} kWh Solar / ${autarkieStats.total_consumption.toFixed(0)} kWh Verbrauch`}
-            />
-          )}
-        </Box>
+        {/* Live Stats with auto-refresh */}
+        <LiveStats
+          initialData={processed}
+          todayPeak={todayPeak}
+          autarkieStats={autarkieStats}
+        />
 
         {/* Year Statistics */}
         {autarkieStats && (
