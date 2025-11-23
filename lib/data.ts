@@ -2,38 +2,36 @@
  * Data fetching utilities for dashboard
  */
 
-import { list } from '@vercel/blob';
 import { DashboardData } from '@/types/dashboard';
 import { unstable_cache } from 'next/cache';
 
-const BLOB_PREFIX = 'dashboard-data';
+// Fixed URL where the latest dashboard data is always available
+const DASHBOARD_DATA_URL = 'https://rpvkpagfoklausud.public.blob.vercel-storage.com/dashboard-data.json';
 
 /**
  * Fetch dashboard data from Vercel Blob Storage
- * Cached with 60 minute revalidation
+ * Cached with 5 minute revalidation
  */
 export const getDashboardData = unstable_cache(
   async (): Promise<DashboardData> => {
     try {
-      // List all blobs with dashboard-data prefix
-      const { blobs } = await list({
-        prefix: BLOB_PREFIX,
+      console.log('[getDashboardData] Fetching from:', DASHBOARD_DATA_URL);
+
+      // Fetch directly from the fixed URL
+      const response = await fetch(DASHBOARD_DATA_URL, {
+        cache: 'no-store', // Always get fresh data
       });
 
-      if (!blobs || blobs.length === 0) {
-        throw new Error('Dashboard data not found in blob storage');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch dashboard data: ${response.status} ${response.statusText}`);
       }
 
-      // Get the most recent blob (they are sorted by uploadedAt desc by default)
-      const blob = blobs[0];
-
-      // Download and parse JSON
-      const response = await fetch(blob.url);
       const data = await response.json();
+      console.log('[getDashboardData] Data fetched successfully, last_updated:', data.last_updated);
 
       return data as DashboardData;
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('[getDashboardData] Error fetching dashboard data:', error);
 
       // Return empty data structure as fallback
       return {
