@@ -1,14 +1,14 @@
 /**
- * Dashboard Home Page
- * Main dashboard overview (placeholder)
+ * Weather Page
+ * Weather monitoring and forecast (placeholder)
  */
 
 'use client';
 
 import { Container, Typography, Paper, Box } from '@mui/material';
-import DashboardIcon from '@mui/icons-material/Dashboard';
+import WbSunnyIcon from '@mui/icons-material/WbSunny';
 
-export default function DashboardPage() {
+export default function WeatherPage() {
   return (
     <Container maxWidth="lg">
       <Box sx={{ my: 4 }}>
@@ -26,15 +26,15 @@ export default function DashboardPage() {
             borderColor: 'divider',
           }}
         >
-          <DashboardIcon sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+          <WbSunnyIcon sx={{ fontSize: 80, color: 'warning.main', mb: 2 }} />
           <Typography variant="h3" component="h1" gutterBottom color="text.primary">
-            Dashboard
+            Wetter
           </Typography>
           <Typography variant="h6" color="text.secondary" textAlign="center">
-            Willkommen im CMI Dashboard
+            Wetterinformationen und -vorhersage
           </Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ mt: 2 }}>
-            Dieser Bereich wird in Zukunft eine Übersicht aller Systeme anzeigen.
+            Dieser Bereich wird Wetterdaten und Prognosen anzeigen.
           </Typography>
         </Paper>
       </Box>
