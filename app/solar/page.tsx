@@ -94,21 +94,23 @@ export default async function SolarPage() {
 
   const { processed } = solarData;
 
-  // Prepare chart data
-  const monthlyChartData = last24Months.map((item) => ({
+  // Prepare chart data (reverse copy for chronological order: old left, new right)
+  // Take only last 12 months for better label visibility
+  const monthlyChartData = [...last24Months].reverse().slice(0, 12).map((item) => ({
     month: new Date(item.timestamp).toLocaleDateString('de-DE', { month: 'short', year: '2-digit' }),
     yield: item.total_solar_yield,
     consumption: item.total_consumption,
     gridImport: item.grid_history_from,
   }));
 
+  // Prepare peak power chart data (already in chronological order: old left, new right)
   const peakPowerChartData = peakPowerHistory.map((item) => ({
     date: new Date(item.timestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
-    peak: item.peak_power / 1000, // Convert to kW
+    peak: item.peak_power, // Keep in Watts
   }));
 
-  // Prepare table data (format on server)
-  const last7DaysRows = last7Days.map((item) => ({
+  // Prepare table data (format on server, reverse copy for newest first)
+  const last7DaysRows = [...last7Days].reverse().map((item) => ({
     timestamp: new Date(item.timestamp).toLocaleDateString('de-DE'),
     total_solar_yield: `${item.total_solar_yield.toFixed(2)} kWh`,
     total_consumption: `${item.total_consumption.toFixed(2)} kWh`,
@@ -212,7 +214,7 @@ export default async function SolarPage() {
           }}
         >
           {last7Days.length > 0 && (
-            <DataTable title="Letzte 7 Tage" columns={last7DaysColumns} rows={last7DaysRows} maxHeight={400} />
+            <DataTable title="Letzte 11 Tage" columns={last7DaysColumns} rows={last7DaysRows} maxHeight={400} />
           )}
           {last24Months.length > 0 && (
             <DataTable
@@ -224,24 +226,17 @@ export default async function SolarPage() {
           )}
         </Box>
 
-        {/* Charts */}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' },
-            gap: 3,
-            mb: 4,
-          }}
-        >
-          {monthlyChartData.length > 0 && (
-            <ChartCard title="Monatlicher Ertrag" height={300}>
+        {/* Monthly Yield Chart */}
+        {monthlyChartData.length > 0 && (
+          <Box sx={{ mb: 4 }}>
+            <ChartCard title="Monatlicher Ertrag" height={350}>
               <BarChart
                 dataset={monthlyChartData}
                 xAxis={[
                   {
                     scaleType: 'band',
                     dataKey: 'month',
-                    tickLabelStyle: { angle: -45, textAnchor: 'end', fontSize: 10 },
+                    tickLabelStyle: { angle: -45, textAnchor: 'end', fontSize: 11 },
                   },
                 ]}
                 series={[
@@ -256,13 +251,24 @@ export default async function SolarPage() {
                     color: '#3b82f6',
                   },
                 ]}
-                height={300}
+                height={350}
+                margin={{ bottom: 80 }}
               />
             </ChartCard>
-          )}
+          </Box>
+        )}
 
+        {/* Peak Power and Grid Import Charts */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' },
+            gap: 3,
+            mb: 4,
+          }}
+        >
           {peakPowerChartData.length > 0 && (
-            <ChartCard title="Spitzenleistung (30 Tage)" height={300}>
+            <ChartCard title="Spitzenleistungen der letzten 30 Tage" height={300}>
               <LineChart
                 dataset={peakPowerChartData}
                 xAxis={[
@@ -272,25 +278,27 @@ export default async function SolarPage() {
                     tickLabelStyle: { angle: -45, textAnchor: 'end', fontSize: 10 },
                   },
                 ]}
+                yAxis={[
+                  {
+                    label: 'Spitzenleistung (W)',
+                  },
+                ]}
                 series={[
                   {
                     dataKey: 'peak',
-                    label: 'Peak (kW)',
-                    color: '#dc2626',
-                    showMark: false,
+                    label: 'Peak Power (W)',
+                    color: '#06b6d4',
+                    showMark: true,
                   },
                 ]}
                 height={300}
               />
             </ChartCard>
           )}
-        </Box>
 
-        {/* Grid Import Chart */}
-        {monthlyChartData.length > 0 && (
-          <Box sx={{ mb: 4 }}>
-            <ChartCard title="Netzbezug Verlauf" height={300}>
-              <BarChart
+          {monthlyChartData.length > 0 && (
+            <ChartCard title="Strombezug von extern der letzten 24 Monate" height={300}>
+              <LineChart
                 dataset={monthlyChartData}
                 xAxis={[
                   {
@@ -299,18 +307,24 @@ export default async function SolarPage() {
                     tickLabelStyle: { angle: -45, textAnchor: 'end', fontSize: 10 },
                   },
                 ]}
+                yAxis={[
+                  {
+                    label: 'Strombezug (kWh)',
+                  },
+                ]}
                 series={[
                   {
                     dataKey: 'gridImport',
-                    label: 'Netzbezug (kWh)',
-                    color: '#ef4444',
+                    label: 'Strombezug von extern (kWh)',
+                    color: '#ec4899',
+                    showMark: true,
                   },
                 ]}
                 height={300}
               />
             </ChartCard>
-          </Box>
-        )}
+          )}
+        </Box>
       </Box>
     </Container>
   );

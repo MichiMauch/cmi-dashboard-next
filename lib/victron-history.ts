@@ -66,9 +66,9 @@ function getLastNMonthsTimestamps(months: number): Array<{ start: number; end: n
   today.setDate(1);
   today.setHours(0, 0, 0, 0);
 
-  for (let i = months - 1; i >= 0; i--) {
-    const monthOffset = today.getMonth() - i;
-    const date = new Date(today.getFullYear(), monthOffset, 1);
+  // Start from previous month (exclude current incomplete month)
+  for (let i = 0; i < months; i++) {
+    const date = new Date(today.getFullYear(), today.getMonth() - 1 - i, 1);
     const start = date.getTime();
     date.setMonth(date.getMonth() + 1, 0);
     date.setHours(23, 59, 59, 999);
@@ -100,10 +100,10 @@ function getCurrentYearMonthlyTimestamps(): Array<{ start: number; end: number }
 }
 
 /**
- * Fetch last 7 days of solar history
+ * Fetch last 11 days of solar history
  */
 export async function fetchLast7Days(): Promise<DayStats[]> {
-  const timestamps = getLastNDaysTimestamps(7);
+  const timestamps = getLastNDaysTimestamps(11);
 
   const results = await Promise.all(
     timestamps.map(async ({ start, end }) => {
@@ -175,10 +175,10 @@ export async function fetchLast24Months(): Promise<MonthStats[]> {
       const records = stats.records;
 
       // Extract aggregated values from API response (pre-calculated by Victron API)
-      // For interval=months, the API returns a single aggregated value at [0][1]
-      const totalSolarYield = records.total_solar_yield?.[0]?.[1] ?? 0;
-      const totalConsumption = records.total_consumption?.[0]?.[1] ?? 0;
-      const gridHistoryFrom = records.grid_history_from?.[0]?.[1] ?? 0;
+      // For interval=months, the API sometimes returns multiple values - take the last one
+      const totalSolarYield = records.total_solar_yield?.[records.total_solar_yield.length - 1]?.[1] ?? 0;
+      const totalConsumption = records.total_consumption?.[records.total_consumption.length - 1]?.[1] ?? 0;
+      const gridHistoryFrom = records.grid_history_from?.[records.grid_history_from.length - 1]?.[1] ?? 0;
 
       return {
         timestamp: start * 1000,
@@ -293,7 +293,7 @@ export async function fetchLast30DaysPeakPower(): Promise<PeakPowerHistoryStats[
       );
 
       return {
-        timestamp: peakPowerEntry[0] * 1000, // Convert to milliseconds
+        timestamp: start * 1000, // Use day start timestamp, not peak entry time
         peak_power: peakPowerEntry[1],
       };
     })

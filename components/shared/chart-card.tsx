@@ -29,7 +29,7 @@ export function ChartCard({ title, subtitle, children, height = 300 }: ChartCard
             </Typography>
           )}
         </Box>
-        <Box sx={{ height, width: '100%' }}>
+        <Box sx={{ height, width: '100%', overflow: 'visible' }}>
           {children}
         </Box>
       </CardContent>
