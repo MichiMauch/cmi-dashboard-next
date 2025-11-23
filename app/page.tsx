@@ -12,6 +12,16 @@ import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import OpacityIcon from '@mui/icons-material/Opacity';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
 
+interface DayForecast {
+  dayName: string;
+  date: string;
+  rating: 'excellent' | 'good' | 'fair' | 'poor';
+  temperature: string;
+  humidity: number;
+  rainProbability: number;
+  reason: string;
+}
+
 interface LaundryForecast {
   bestDay: {
     date: string;
@@ -24,6 +34,7 @@ interface LaundryForecast {
     humidity: string;
     rain: string;
   };
+  allDays: DayForecast[];
 }
 
 export default function DashboardPage() {
@@ -201,6 +212,107 @@ export default function DashboardPage() {
                     </Box>
                   </Box>
                 </Box>
+
+                {/* 5-Day Overview */}
+                {forecast.allDays && forecast.allDays.length > 0 && (
+                  <Box sx={{ mt: 4 }}>
+                    <Typography variant="h6" gutterBottom sx={{ mb: 2, fontWeight: 600 }}>
+                      Alle 5 Tage im Überblick
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', md: 'repeat(5, 1fr)' },
+                        gap: 2,
+                      }}
+                    >
+                      {forecast.allDays.map((day, index) => {
+                        // Determine badge color and icon based on rating
+                        let badgeColor: 'success' | 'info' | 'warning' | 'error' = 'info';
+                        let ratingText = '';
+                        let icon = '👕';
+
+                        switch (day.rating) {
+                          case 'excellent':
+                            badgeColor = 'success';
+                            ratingText = 'Ausgezeichnet';
+                            icon = '✅';
+                            break;
+                          case 'good':
+                            badgeColor = 'info';
+                            ratingText = 'Gut';
+                            icon = '⭐';
+                            break;
+                          case 'fair':
+                            badgeColor = 'warning';
+                            ratingText = 'Okay';
+                            icon = '🌤️';
+                            break;
+                          case 'poor':
+                            badgeColor = 'error';
+                            ratingText = 'Nicht empfohlen';
+                            icon = '⛈️';
+                            break;
+                        }
+
+                        return (
+                          <Card
+                            key={index}
+                            elevation={2}
+                            sx={{
+                              border: day.dayName === forecast.bestDay.dayName ? '2px solid' : 'none',
+                              borderColor: 'success.main',
+                            }}
+                          >
+                            <CardContent>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                  {day.dayName}
+                                </Typography>
+                                <Typography variant="h4">{icon}</Typography>
+                              </Box>
+                              <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                                {day.date}
+                              </Typography>
+
+                              <Box
+                                sx={{
+                                  backgroundColor: `${badgeColor}.main`,
+                                  color: `${badgeColor}.contrastText`,
+                                  borderRadius: 1,
+                                  px: 1,
+                                  py: 0.5,
+                                  mb: 1.5,
+                                  textAlign: 'center',
+                                }}
+                              >
+                                <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                                  {ratingText}
+                                </Typography>
+                              </Box>
+
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                <Typography variant="body2">
+                                  🌡️ {day.temperature}
+                                </Typography>
+                                <Typography variant="body2">
+                                  💧 {day.rainProbability}% Regen
+                                </Typography>
+                                <Typography variant="body2">
+                                  💨 {day.humidity}% Luftf.
+                                </Typography>
+                              </Box>
+
+                              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                                {day.reason}
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </Box>
+                  </Box>
+                )}
               </Box>
             )}
           </CardContent>

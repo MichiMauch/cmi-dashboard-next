@@ -9,6 +9,16 @@ import type { ProcessedWeatherData } from '@/types/weather';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
+interface DayForecast {
+  dayName: string;
+  date: string;
+  rating: 'excellent' | 'good' | 'fair' | 'poor';
+  temperature: string;
+  humidity: number;
+  rainProbability: number;
+  reason: string;
+}
+
 interface LaundryForecast {
   bestDay: {
     date: string;
@@ -21,6 +31,7 @@ interface LaundryForecast {
     humidity: string;
     rain: string;
   };
+  allDays: DayForecast[];
 }
 
 /**
@@ -105,7 +116,7 @@ export async function GET() {
     const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
     // Create prompt for AI
-    const systemPrompt = `Du bist ein Wetter-Experte. Analysiere Wettervorhersagen und empfehle den BESTEN Tag zum Wäsche draussen aufhängen.
+    const systemPrompt = `Du bist ein Wetter-Experte. Analysiere Wettervorhersagen und bewerte ALLE Tage zum Wäsche draussen aufhängen.
 
 WICHTIGE KRITERIEN (in dieser Reihenfolge):
 1. KEIN oder sehr wenig Regen (niedrige Regenwahrscheinlichkeit)
@@ -114,6 +125,12 @@ WICHTIGE KRITERIEN (in dieser Reihenfolge):
 4. Angenehme Temperatur
 
 ZEITFENSTER: Nur zwischen 06:00 und 18:00 Uhr relevant (nicht nachts).
+
+BEWERTUNG:
+- "excellent": Perfekte Bedingungen (< 20% Regen, < 70% Luftfeuchtigkeit)
+- "good": Gute Bedingungen (< 40% Regen, < 80% Luftfeuchtigkeit)
+- "fair": Akzeptable Bedingungen (< 60% Regen)
+- "poor": Nicht empfohlen (> 60% Regen oder > 85% Luftfeuchtigkeit)
 
 ANTWORTE NUR mit einem JSON-Objekt in diesem exakten Format:
 {
@@ -124,16 +141,29 @@ ANTWORTE NUR mit einem JSON-Objekt in diesem exakten Format:
   },
   "reasoning": "Kurze Begründung (1-2 Sätze) warum dieser Tag am besten ist",
   "weatherSummary": {
-    "temperature": "Min-Max Temperatur",
+    "temperature": "Min-Max Temperatur vom besten Tag",
     "humidity": "Luftfeuchtigkeit in %",
     "rain": "Regenwahrscheinlichkeit in %"
-  }
+  },
+  "allDays": [
+    {
+      "dayName": "Wochentag",
+      "date": "DD.MM",
+      "rating": "excellent/good/fair/poor",
+      "temperature": "Min-Max in °C",
+      "humidity": 65,
+      "rainProbability": 20,
+      "reason": "Kurze Begründung für diesen Tag (1 Satz)"
+    }
+  ]
 }`;
 
     const userPrompt = `WETTERDATEN für die nächsten 5 Tage:
 ${JSON.stringify(forecastData, null, 2)}
 
-Analysiere diese Daten und gib den besten Tag zum Wäsche aufhängen zurück.`;
+Analysiere diese Daten und gib:
+1. Den besten Tag zum Wäsche aufhängen
+2. ALLE 5 Tage mit Bewertung (rating) sortiert nach Datum`;
 
     // Call OpenAI API
     let completion;
