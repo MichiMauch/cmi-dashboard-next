@@ -110,7 +110,7 @@ export async function fetchLast7Days(): Promise<DayStats[]> {
       console.log('[fetchLast7Days] Fetching day:', new Date(start * 1000).toISOString());
 
       const stats = await fetchWithTokenRefresh((token) =>
-        fetchVictronStats(INSTALLATION_ID, token, 'days', 'kwh', start.toString())
+        fetchVictronStats(INSTALLATION_ID, token, '15mins', 'live_feed', start.toString())
       );
 
       console.log('[fetchLast7Days] Response keys:', Object.keys(stats.records));
@@ -122,21 +122,49 @@ export async function fetchLast7Days(): Promise<DayStats[]> {
 
       const records = stats.records;
 
-      // Calculate peak power for the day - handle both array and single value
+      // Calculate peak power for the day
       let peakPower = 0;
-      if (records.Pdc && Array.isArray(records.Pdc)) {
+      if (records.Pdc && Array.isArray(records.Pdc) && records.Pdc.length > 0) {
         peakPower = Math.max(...records.Pdc.map((item) => item[1]));
       }
 
-      // Historical data uses different format - single values not arrays
+      // Get end-of-day values for totals (last entry in the array)
+      let totalSolarYield = 0;
+      let totalConsumption = 0;
+      let totalEnergyImported = 0;
+      let totalEnergyExported = 0;
+
+      if (records.total_solar_yield && Array.isArray(records.total_solar_yield) && records.total_solar_yield.length > 0) {
+        totalSolarYield = records.total_solar_yield[records.total_solar_yield.length - 1][1];
+      }
+
+      if (records.total_consumption && Array.isArray(records.total_consumption) && records.total_consumption.length > 0) {
+        totalConsumption = records.total_consumption[records.total_consumption.length - 1][1];
+      }
+
+      if (records.total_energy_imported && Array.isArray(records.total_energy_imported) && records.total_energy_imported.length > 0) {
+        totalEnergyImported = records.total_energy_imported[records.total_energy_imported.length - 1][1];
+      }
+
+      if (records.total_energy_exported && Array.isArray(records.total_energy_exported) && records.total_energy_exported.length > 0) {
+        totalEnergyExported = records.total_energy_exported[records.total_energy_exported.length - 1][1];
+      }
+
+      // Calculate average power from Pdc values
+      let averagePower = 0;
+      if (records.Pdc && Array.isArray(records.Pdc) && records.Pdc.length > 0) {
+        const sum = records.Pdc.reduce((acc, item) => acc + item[1], 0);
+        averagePower = sum / records.Pdc.length;
+      }
+
       return {
         timestamp: start * 1000,
-        total_solar_yield: records.total_solar_yield?.[0]?.[1] ?? 0,
-        total_consumption: records.total_consumption?.[0]?.[1] ?? 0,
-        average_power: records.average_power?.[0]?.[1] ?? 0,
+        total_solar_yield: totalSolarYield,
+        total_consumption: totalConsumption,
+        average_power: averagePower,
         peak_power: peakPower,
-        total_energy_imported: records.total_energy_imported?.[0]?.[1] ?? 0,
-        total_energy_exported: records.total_energy_exported?.[0]?.[1] ?? 0,
+        total_energy_imported: totalEnergyImported,
+        total_energy_exported: totalEnergyExported,
       };
     })
   );
@@ -154,8 +182,9 @@ export async function fetchLast24Months(): Promise<MonthStats[]> {
     timestamps.map(async ({ start, end }) => {
       console.log('[fetchLast24Months] Fetching month:', new Date(start * 1000).toISOString());
 
+      // Fetch data for the entire month using live_feed
       const stats = await fetchWithTokenRefresh((token) =>
-        fetchVictronStats(INSTALLATION_ID, token, 'months', 'kwh', start.toString())
+        fetchVictronStats(INSTALLATION_ID, token, 'days', 'live_feed', start.toString())
       );
 
       console.log('[fetchLast24Months] Response keys:', Object.keys(stats.records));
@@ -163,11 +192,30 @@ export async function fetchLast24Months(): Promise<MonthStats[]> {
       console.log('[fetchLast24Months] total_consumption:', stats.records?.total_consumption);
       console.log('[fetchLast24Months] grid_history_from:', stats.records?.grid_history_from);
 
+      const records = stats.records;
+
+      // Get end-of-month values for totals (last entry in the array)
+      let totalSolarYield = 0;
+      let totalConsumption = 0;
+      let gridHistoryFrom = 0;
+
+      if (records.total_solar_yield && Array.isArray(records.total_solar_yield) && records.total_solar_yield.length > 0) {
+        totalSolarYield = records.total_solar_yield[records.total_solar_yield.length - 1][1];
+      }
+
+      if (records.total_consumption && Array.isArray(records.total_consumption) && records.total_consumption.length > 0) {
+        totalConsumption = records.total_consumption[records.total_consumption.length - 1][1];
+      }
+
+      if (records.grid_history_from && Array.isArray(records.grid_history_from) && records.grid_history_from.length > 0) {
+        gridHistoryFrom = records.grid_history_from[records.grid_history_from.length - 1][1];
+      }
+
       return {
         timestamp: start,
-        total_solar_yield: stats.records?.total_solar_yield?.[0]?.[1] ?? 0,
-        total_consumption: stats.records?.total_consumption?.[0]?.[1] ?? 0,
-        grid_history_from: stats.records?.grid_history_from?.[0]?.[1] ?? 0,
+        total_solar_yield: totalSolarYield,
+        total_consumption: totalConsumption,
+        grid_history_from: gridHistoryFrom,
       };
     })
   );
@@ -186,12 +234,35 @@ export async function fetchAutarkieStats(): Promise<AutarkieStats> {
   const results = await Promise.all(
     timestamps.map(async ({ start, end }) => {
       const stats = await fetchWithTokenRefresh((token) =>
-        fetchVictronStats(INSTALLATION_ID, token, 'months', 'kwh', start.toString())
+        fetchVictronStats(INSTALLATION_ID, token, 'days', 'live_feed', start.toString())
       );
 
       console.log('[fetchAutarkieStats] Month response keys:', Object.keys(stats.records));
 
-      return stats.records;
+      const records = stats.records;
+
+      // Get end-of-month values (last entry in the array)
+      let monthSolarYield = 0;
+      let monthConsumption = 0;
+      let monthGridHistoryFrom = 0;
+
+      if (records.total_solar_yield && Array.isArray(records.total_solar_yield) && records.total_solar_yield.length > 0) {
+        monthSolarYield = records.total_solar_yield[records.total_solar_yield.length - 1][1];
+      }
+
+      if (records.total_consumption && Array.isArray(records.total_consumption) && records.total_consumption.length > 0) {
+        monthConsumption = records.total_consumption[records.total_consumption.length - 1][1];
+      }
+
+      if (records.grid_history_from && Array.isArray(records.grid_history_from) && records.grid_history_from.length > 0) {
+        monthGridHistoryFrom = records.grid_history_from[records.grid_history_from.length - 1][1];
+      }
+
+      return {
+        solar_yield: monthSolarYield,
+        consumption: monthConsumption,
+        grid_from: monthGridHistoryFrom,
+      };
     })
   );
 
@@ -200,22 +271,12 @@ export async function fetchAutarkieStats(): Promise<AutarkieStats> {
   let totalConsumption = 0;
   let gridHistoryFrom = 0;
 
-  results.forEach((records, index) => {
-    console.log(`[fetchAutarkieStats] Month ${index} data:`, {
-      total_solar_yield: records.total_solar_yield,
-      total_consumption: records.total_consumption,
-      grid_history_from: records.grid_history_from,
-    });
+  results.forEach((monthData, index) => {
+    console.log(`[fetchAutarkieStats] Month ${index} data:`, monthData);
 
-    if (records.total_solar_yield && Array.isArray(records.total_solar_yield)) {
-      totalSolarYield += records.total_solar_yield[0][1];
-    }
-    if (records.total_consumption && Array.isArray(records.total_consumption)) {
-      totalConsumption += records.total_consumption[0][1];
-    }
-    if (records.grid_history_from && Array.isArray(records.grid_history_from)) {
-      gridHistoryFrom += records.grid_history_from[0][1];
-    }
+    totalSolarYield += monthData.solar_yield;
+    totalConsumption += monthData.consumption;
+    gridHistoryFrom += monthData.grid_from;
   });
 
   const autarkie = totalConsumption > 0
