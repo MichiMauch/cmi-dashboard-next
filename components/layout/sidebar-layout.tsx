@@ -32,6 +32,7 @@ import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
+import Image from 'next/image';
 
 const DRAWER_WIDTH = 240;
 
@@ -96,9 +97,18 @@ export function SidebarLayout({ children, mode, onToggleMode }: SidebarLayoutPro
           >
             {open ? <ChevronLeftIcon /> : <MenuIcon />}
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            CMI Dashboard
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, gap: 1.5 }}>
+            <Image
+              src="/favicon.png"
+              alt="CMI Logo"
+              width={32}
+              height={32}
+              style={{ objectFit: 'contain' }}
+            />
+            <Typography variant="h6" noWrap component="div">
+              Dashboard
+            </Typography>
+          </Box>
           <IconButton color="inherit" onClick={onToggleMode}>
             {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
           </IconButton>
