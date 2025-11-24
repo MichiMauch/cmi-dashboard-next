@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch today's data with 15-minute intervals
     const stats = await fetchWithTokenRefresh((token) =>
-      fetchVictronStats(installationId, token, '15mins', 'live_feed', start.toString(), end.toString())
+      fetchVictronStats(installationId, token, '15mins', undefined, start.toString(), end.toString())
     );
 
     const records = stats.records;

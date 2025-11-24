@@ -37,6 +37,11 @@ export interface PeakPowerHistoryStats {
   peak_power: number;
 }
 
+export interface YearGridImportStats {
+  year: string;
+  gridImport: number;
+}
+
 /**
  * Get timestamps for last N days
  */
@@ -274,7 +279,7 @@ export async function fetchLast30DaysPeakPower(): Promise<PeakPowerHistoryStats[
   const results = await Promise.all(
     timestamps.map(async ({ start, end }) => {
       const stats = await fetchWithTokenRefresh((token) =>
-        fetchVictronStats(INSTALLATION_ID, token, '15mins', 'live_feed', start.toString(), end.toString())
+        fetchVictronStats(INSTALLATION_ID, token, '15mins', undefined, start.toString(), end.toString())
       );
 
       const records = stats.records;
@@ -295,6 +300,51 @@ export async function fetchLast30DaysPeakPower(): Promise<PeakPowerHistoryStats[
       return {
         timestamp: start * 1000, // Use day start timestamp, not peak entry time
         peak_power: peakPowerEntry[1],
+      };
+    })
+  );
+
+  return results;
+}
+
+/**
+ * Fetch last 5 years of grid import data
+ */
+export async function fetchLast5YearsGridImport(): Promise<YearGridImportStats[]> {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+
+  // Generate last 5 years
+  for (let i = 4; i >= 0; i--) {
+    years.push(currentYear - i);
+  }
+
+  console.log('[fetchLast5YearsGridImport] Fetching years:', years);
+
+  const results = await Promise.all(
+    years.map(async (year) => {
+      const start = new Date(year, 0, 1).getTime() / 1000; // Jan 1st
+      const end = new Date(year, 11, 31, 23, 59, 59, 999).getTime() / 1000; // Dec 31st
+
+      console.log(`[fetchLast5YearsGridImport] Fetching year ${year}:`, new Date(start * 1000).toISOString());
+
+      const stats = await fetchWithTokenRefresh((token) =>
+        fetchVictronStats(INSTALLATION_ID, token, 'months', undefined, start.toString(), end.toString())
+      );
+
+      const records = stats.records;
+
+      // Sum all grid_history_from values for the year
+      let yearlyGridImport = 0;
+      if (records.grid_history_from && Array.isArray(records.grid_history_from)) {
+        yearlyGridImport = records.grid_history_from.reduce((sum, item) => sum + (item[1] || 0), 0);
+      }
+
+      console.log(`[fetchLast5YearsGridImport] Year ${year} grid import:`, yearlyGridImport);
+
+      return {
+        year: year.toString(),
+        gridImport: yearlyGridImport,
       };
     })
   );

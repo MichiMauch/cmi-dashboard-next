@@ -14,10 +14,8 @@ const TOKEN_TTL = 3600; // 1 hour in seconds
  * First tries MongoDB, then falls back to login
  */
 export async function getVictronToken(): Promise<string> {
-  console.log('[Token] Getting Victron token...');
   try {
     await dbConnect();
-    console.log('[Token] MongoDB connected');
 
     // Try to get token from MongoDB
     const tokenDoc = await Token.findOne();

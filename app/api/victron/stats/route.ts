@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
 
     const interval = searchParams.get('interval') || '15mins';
-    const type = searchParams.get('type') || 'live_feed';
+    const type = searchParams.get('type') || undefined;
     const start = searchParams.get('start') || undefined;
 
     const installationId = process.env.VICTRON_INSTALLATION_ID;

@@ -14,8 +14,6 @@ import BoltIcon from '@mui/icons-material/Bolt';
 import BatteryChargingFullIcon from '@mui/icons-material/BatteryChargingFull';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import FlashOnIcon from '@mui/icons-material/FlashOn';
-import ElectricBoltIcon from '@mui/icons-material/ElectricBolt';
-import PowerIcon from '@mui/icons-material/Power';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 interface SolarData {
@@ -57,7 +55,7 @@ export function LiveStats({ initialData, todayPeak, autarkieStats }: LiveStatsPr
 
         // Add cache-busting timestamp and disable caching
         const response = await fetch(
-          `/api/victron/stats?interval=15mins&type=live_feed&t=${Date.now()}`,
+          `/api/victron/stats?interval=15mins&t=${Date.now()}`,
           { cache: 'no-store' }
         );
 
@@ -79,8 +77,9 @@ export function LiveStats({ initialData, todayPeak, autarkieStats }: LiveStatsPr
     // Fetch immediately on mount
     fetchData();
 
-    // Then poll every 15 seconds
-    const interval = setInterval(fetchData, 15000);
+    // Poll interval: 60s in development (rate limiting), 15s in production
+    const pollInterval = process.env.NODE_ENV === 'development' ? 60000 : 15000;
+    const interval = setInterval(fetchData, pollInterval);
 
     // Cleanup on unmount
     return () => clearInterval(interval);
@@ -134,41 +133,6 @@ export function LiveStats({ initialData, todayPeak, autarkieStats }: LiveStatsPr
           value={`${data.todayConsumption.toFixed(2)} kWh`}
           icon={<FlashOnIcon />}
           color="info"
-        />
-      </Box>
-
-      {/* Power Flow Cards */}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
-          gap: 3,
-          mb: 4,
-        }}
-      >
-        <MetricCard
-          title="Solarleistung"
-          value={data.currentPower.toFixed(0)}
-          unit="W"
-          icon={<WbSunnyIcon />}
-          color="warning"
-          subtitle={`Heute: ${data.todayYield.toFixed(2)} kWh`}
-        />
-        <MetricCard
-          title="Verbrauch"
-          value={data.todayConsumption.toFixed(2)}
-          unit="kWh"
-          icon={<ElectricBoltIcon />}
-          color="info"
-          subtitle="Heute"
-        />
-        <MetricCard
-          title="Spitzenleistung"
-          value={(todayPeak / 1000).toFixed(2)}
-          unit="kW"
-          icon={<PowerIcon />}
-          color="error"
-          subtitle="Heute"
         />
       </Box>
 

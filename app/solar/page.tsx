@@ -10,19 +10,40 @@ import {
   fetchLast24Months,
   fetchAutarkieStats,
   fetchLast30DaysPeakPower,
+  fetchLast5YearsGridImport,
 } from '@/lib/victron-history';
+import { getCachedOrFetch } from '@/lib/dev-cache';
 import { LiveStats } from '@/components/solar/live-stats';
+import { MonthlyChart } from '@/components/solar/monthly-chart';
+import { YearlyGridChart } from '@/components/solar/yearly-grid-chart';
 import { StatCard } from '@/components/shared/stat-card';
 import { DataTable, DataTableColumn } from '@/components/shared/data-table';
 import { ChartCard } from '@/components/shared/chart-card';
-import { Container, Typography, Box } from '@mui/material';
-import { BarChart } from '@mui/x-charts/BarChart';
+import { Container, Typography, Box, Chip } from '@mui/material';
 import { LineChart } from '@mui/x-charts/LineChart';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import ElectricBoltIcon from '@mui/icons-material/ElectricBolt';
 import PowerIcon from '@mui/icons-material/Power';
+import PlugIcon from '@mui/icons-material/Power';
+import BoltIcon from '@mui/icons-material/Bolt';
 
-export const revalidate = 15; // Revalidate every 15 seconds
+// Revalidate every 60 seconds (increased from 15 to reduce API calls)
+export const revalidate = 60;
+
+const MONTH_NAMES: Record<string, string> = {
+  '01': 'Jan',
+  '02': 'Feb',
+  '03': 'Mrz',
+  '04': 'Apr',
+  '05': 'Mai',
+  '06': 'Jun',
+  '07': 'Jul',
+  '08': 'Aug',
+  '09': 'Sep',
+  '10': 'Okt',
+  '11': 'Nov',
+  '12': 'Dez',
+};
 
 async function getSolarData() {
   try {
@@ -35,7 +56,7 @@ async function getSolarData() {
     console.log('[SolarPage] Fetching Victron data...');
 
     const stats = await fetchWithTokenRefresh((token) =>
-      fetchVictronStats(installationId, token, '15mins', 'live_feed')
+      fetchVictronStats(installationId, token, '15mins')
     );
 
     const processedData = processSolarData(stats);
@@ -54,12 +75,13 @@ async function getSolarData() {
 }
 
 export default async function SolarPage() {
-  const [solarData, last7Days, last24Months, autarkieStats, peakPowerHistory] = await Promise.all([
-    getSolarData(),
-    fetchLast7Days().catch(() => []),
-    fetchLast24Months().catch(() => []),
-    fetchAutarkieStats().catch(() => null),
-    fetchLast30DaysPeakPower().catch(() => []),
+  const [solarData, last7Days, last24Months, autarkieStats, peakPowerHistory, yearlyGridImport] = await Promise.all([
+    getCachedOrFetch('solar-data', () => getSolarData()),
+    getCachedOrFetch('last-7-days', () => fetchLast7Days().catch(() => [])),
+    getCachedOrFetch('last-24-months', () => fetchLast24Months().catch(() => [])),
+    getCachedOrFetch('autarkie-stats', () => fetchAutarkieStats().catch(() => null)),
+    getCachedOrFetch('peak-power-30d', () => fetchLast30DaysPeakPower().catch(() => [])),
+    getCachedOrFetch('yearly-grid-import', () => fetchLast5YearsGridImport().catch(() => [])),
   ]);
 
   if (!solarData || 'error' in solarData) {
@@ -94,14 +116,18 @@ export default async function SolarPage() {
 
   const { processed } = solarData;
 
-  // Prepare chart data (reverse copy for chronological order: old left, new right)
-  // Take only last 12 months for better label visibility
-  const monthlyChartData = [...last24Months].reverse().slice(0, 12).map((item) => ({
-    month: new Date(item.timestamp).toLocaleDateString('de-DE', { month: 'short', year: '2-digit' }),
-    yield: item.total_solar_yield,
-    consumption: item.total_consumption,
-    gridImport: item.grid_history_from,
-  }));
+  // Prepare chart data (take newest 12 months, then reverse for chronological order: old left, new right)
+  const monthlyChartData = [...last24Months].slice(0, 12).reverse().map((item) => {
+    const date = new Date(item.timestamp);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+    return {
+      month: `${MONTH_NAMES[month]} ${year}`,
+      yield: item.total_solar_yield,
+      consumption: item.total_consumption,
+      gridImport: item.grid_history_from,
+    };
+  });
 
   // Prepare peak power chart data (already in chronological order: old left, new right)
   const peakPowerChartData = peakPowerHistory.map((item) => ({
@@ -144,21 +170,29 @@ export default async function SolarPage() {
       <Box sx={{ my: 4 }}>
         {/* Header */}
         <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Typography
-            variant="h3"
-            component="h1"
-            gutterBottom
-            sx={{
-              background: 'linear-gradient(to right, #eab308, #ea580c)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              fontWeight: 700,
-            }}
-          >
-            ☀️ Solar Dashboard
-          </Typography>
-          <Typography variant="body1" color="text.secondary" gutterBottom>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <Typography
+              variant="h3"
+              component="h1"
+              sx={{
+                background: 'linear-gradient(to right, #eab308, #ea580c)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontWeight: 700,
+              }}
+            >
+              ☀️ Solar Dashboard
+            </Typography>
+            <Chip
+              icon={processed.gridPower > 0 ? <PlugIcon /> : <BoltIcon />}
+              label={processed.gridPower > 0 ? 'Netzstrom' : 'Autark'}
+              color={processed.gridPower > 0 ? 'warning' : 'success'}
+              variant="filled"
+              sx={{ fontWeight: 600 }}
+            />
+          </Box>
+          <Typography variant="body1" color="text.secondary" gutterBottom sx={{ mt: 2 }}>
             Live-Daten von Victron Energy VRM
           </Typography>
           <Typography variant="caption" color="text.secondary">
@@ -230,30 +264,7 @@ export default async function SolarPage() {
         {monthlyChartData.length > 0 && (
           <Box sx={{ mb: 4 }}>
             <ChartCard title="Monatlicher Ertrag" height={350}>
-              <BarChart
-                dataset={monthlyChartData}
-                xAxis={[
-                  {
-                    scaleType: 'band',
-                    dataKey: 'month',
-                    tickLabelStyle: { angle: -45, textAnchor: 'end', fontSize: 11 },
-                  },
-                ]}
-                series={[
-                  {
-                    dataKey: 'yield',
-                    label: 'Solar Ertrag (kWh)',
-                    color: '#eab308',
-                  },
-                  {
-                    dataKey: 'consumption',
-                    label: 'Verbrauch (kWh)',
-                    color: '#3b82f6',
-                  },
-                ]}
-                height={350}
-                margin={{ bottom: 80 }}
-              />
+              <MonthlyChart data={monthlyChartData} />
             </ChartCard>
           </Box>
         )}
@@ -296,32 +307,9 @@ export default async function SolarPage() {
             </ChartCard>
           )}
 
-          {monthlyChartData.length > 0 && (
-            <ChartCard title="Strombezug von extern der letzten 24 Monate" height={300}>
-              <LineChart
-                dataset={monthlyChartData}
-                xAxis={[
-                  {
-                    scaleType: 'band',
-                    dataKey: 'month',
-                    tickLabelStyle: { angle: -45, textAnchor: 'end', fontSize: 10 },
-                  },
-                ]}
-                yAxis={[
-                  {
-                    label: 'Strombezug (kWh)',
-                  },
-                ]}
-                series={[
-                  {
-                    dataKey: 'gridImport',
-                    label: 'Strombezug von extern (kWh)',
-                    color: '#ec4899',
-                    showMark: true,
-                  },
-                ]}
-                height={300}
-              />
+          {yearlyGridImport.length > 0 && (
+            <ChartCard title="Strombezug von extern der letzten 5 Jahre" height={300}>
+              <YearlyGridChart data={yearlyGridImport} />
             </ChartCard>
           )}
         </Box>

@@ -36,31 +36,18 @@ function formatTime(timestamp: number): string {
 }
 
 /**
- * Fetch weather data
+ * Fetch weather data directly (no HTTP call needed in Server Component)
  */
 async function getWeatherData(): Promise<ProcessedWeatherData | { error: string } | null> {
   try {
-    // Use absolute URL for production, relative for development
-    const baseUrl = process.env.NODE_ENV === 'production'
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'cmi-dashboard-next.vercel.app'}`
-      : 'http://localhost:3000';
+    console.log('[WeatherPage] Fetching weather data...');
 
-    console.log('[WeatherPage] Fetching from:', `${baseUrl}/api/weather`);
+    // Import weather fetching function
+    const { fetchWeatherData } = await import('@/lib/weather');
 
-    const response = await fetch(`${baseUrl}/api/weather`, {
-      next: { revalidate: 600 },
-      cache: 'no-store', // Force fresh data for debugging
-    });
+    // Call directly - no HTTP request needed
+    const data = await fetchWeatherData();
 
-    console.log('[WeatherPage] Response status:', response.status);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: response.statusText }));
-      console.error('[WeatherPage] API error:', errorData);
-      return errorData;
-    }
-
-    const data = await response.json();
     console.log('[WeatherPage] Data received successfully');
     return data;
   } catch (error) {
