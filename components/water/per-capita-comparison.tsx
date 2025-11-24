@@ -16,7 +16,7 @@ interface PerCapitaComparisonProps {
 export function PerCapitaComparison({ yourDailyLiters, averageDailyLiters }: PerCapitaComparisonProps) {
   const data = [
     {
-      category: 'Ihr Verbrauch',
+      category: 'Unser Verbrauch',
       liters: yourDailyLiters,
       color: '#10b981', // Green for efficient
     },
@@ -57,7 +57,7 @@ export function PerCapitaComparison({ yourDailyLiters, averageDailyLiters }: Per
       />
       <Box sx={{ mt: 2, textAlign: 'center' }}>
         <Typography variant="body2" color="success.main" sx={{ fontWeight: 600 }}>
-          Sie verbrauchen {savingsPercent.toFixed(1)}% weniger als der Durchschnitt! 🎉
+          Wir verbrauchen {savingsPercent.toFixed(1)}% weniger als der Durchschnitt! 🎉
         </Typography>
         <Typography variant="caption" color="text.secondary">
           Einsparung: {(averageDailyLiters - yourDailyLiters).toFixed(1)} Liter pro Person pro Tag

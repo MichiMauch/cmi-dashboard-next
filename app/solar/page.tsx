@@ -13,19 +13,30 @@ import {
   fetchLast5YearsGridImport,
 } from '@/lib/victron-history';
 import { getCachedOrFetch } from '@/lib/dev-cache';
+import {
+  calculateYearlyCosts,
+  calculateMonthlyCosts,
+  calculateDailyCosts,
+  formatCurrency,
+  ELECTRICITY_PRICE_RAPPEN,
+  ELECTRICITY_PRICE_SOURCE,
+} from '@/lib/electricity-costs';
 import { LiveStats } from '@/components/solar/live-stats';
 import { MonthlyChart } from '@/components/solar/monthly-chart';
 import { YearlyGridChart } from '@/components/solar/yearly-grid-chart';
 import { StatCard } from '@/components/shared/stat-card';
 import { DataTable, DataTableColumn } from '@/components/shared/data-table';
 import { ChartCard } from '@/components/shared/chart-card';
-import { Container, Typography, Box, Chip } from '@mui/material';
+import { Container, Typography, Box, Chip, Link as MuiLink, Alert } from '@mui/material';
 import { LineChart } from '@mui/x-charts/LineChart';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import ElectricBoltIcon from '@mui/icons-material/ElectricBolt';
 import PowerIcon from '@mui/icons-material/Power';
 import PlugIcon from '@mui/icons-material/Power';
 import BoltIcon from '@mui/icons-material/Bolt';
+import SavingsIcon from '@mui/icons-material/Savings';
+import InfoIcon from '@mui/icons-material/Info';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 // Revalidate every 60 seconds (increased from 15 to reduce API calls)
 export const revalidate = 60;
@@ -136,34 +147,58 @@ export default async function SolarPage() {
   }));
 
   // Prepare table data (format on server, reverse copy for newest first)
-  const last7DaysRows = [...last7Days].reverse().map((item) => ({
-    timestamp: new Date(item.timestamp).toLocaleDateString('de-DE'),
-    total_solar_yield: `${item.total_solar_yield.toFixed(2)} kWh`,
-    total_consumption: `${item.total_consumption.toFixed(2)} kWh`,
-  }));
+  const last7DaysRows = [...last7Days].reverse().map((item) => {
+    const costs = calculateDailyCosts(item.total_consumption, item.total_energy_imported || 0);
+    return {
+      timestamp: new Date(item.timestamp).toLocaleDateString('de-DE'),
+      total_solar_yield: `${item.total_solar_yield.toFixed(2)} kWh`,
+      total_consumption: `${item.total_consumption.toFixed(2)} kWh`,
+      costs: formatCurrency(costs.neighborCost),
+      savings: formatCurrency(costs.solarSavings),
+    };
+  });
 
   const last7DaysColumns: DataTableColumn[] = [
     { id: 'timestamp', label: 'Datum' },
     { id: 'total_solar_yield', label: 'Ertrag', align: 'right' },
     { id: 'total_consumption', label: 'Verbrauch', align: 'right' },
+    { id: 'costs', label: 'Kosten', align: 'right' },
+    { id: 'savings', label: 'Einsparungen', align: 'right' },
   ];
 
-  const monthlyDataRows = last24Months.slice(0, 12).map((item) => ({
-    timestamp: new Date(item.timestamp).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }),
-    total_solar_yield: `${item.total_solar_yield.toFixed(2)} kWh`,
-    total_consumption: `${item.total_consumption.toFixed(2)} kWh`,
-    grid_history_from: `${item.grid_history_from.toFixed(2)} kWh`,
-  }));
+  const monthlyDataRows = last24Months.slice(0, 12).map((item) => {
+    const costs = calculateMonthlyCosts(item.total_consumption, item.grid_history_from);
+    return {
+      timestamp: new Date(item.timestamp).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }),
+      total_solar_yield: `${item.total_solar_yield.toFixed(2)} kWh`,
+      total_consumption: `${item.total_consumption.toFixed(2)} kWh`,
+      grid_history_from: `${item.grid_history_from.toFixed(2)} kWh`,
+      costs: formatCurrency(costs.neighborCost),
+      savings: formatCurrency(costs.solarSavings),
+    };
+  });
 
   const monthlyDataColumns: DataTableColumn[] = [
     { id: 'timestamp', label: 'Monat' },
     { id: 'total_solar_yield', label: 'Solar Ertrag', align: 'right' },
     { id: 'total_consumption', label: 'Verbrauch', align: 'right' },
-    { id: 'grid_history_from', label: 'Netz Bezug', align: 'right' },
+    { id: 'grid_history_from', label: 'Nachbar-Strom', align: 'right' },
+    { id: 'costs', label: 'Kosten', align: 'right' },
+    { id: 'savings', label: 'Einsparungen', align: 'right' },
   ];
 
   // Calculate peak power for today
   const todayPeak = peakPowerHistory[0]?.peak_power || 0;
+
+  // Calculate costs based on electricity prices
+  const todayCosts = calculateDailyCosts(
+    processed.todayConsumption,
+    0 // We don't have today's grid import in processed data, will show yearly costs instead
+  );
+
+  const yearlyCosts = autarkieStats
+    ? calculateYearlyCosts(autarkieStats.total_consumption, autarkieStats.grid_history_from)
+    : null;
 
   return (
     <Container maxWidth="xl">
@@ -312,6 +347,115 @@ export default async function SolarPage() {
               <YearlyGridChart data={yearlyGridImport} />
             </ChartCard>
           )}
+        </Box>
+
+        {/* Electricity Costs & Savings */}
+        <Box sx={{ mt: 6, mb: 4 }}>
+          <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
+            💰 Stromkosten & Einsparungen
+          </Typography>
+
+          {/* Yearly Cost Breakdown Table */}
+          <Box sx={{ mb: 4 }}>
+            <DataTable
+              title="Kosten pro Jahr"
+              columns={[
+                { id: 'year', label: 'Jahr' },
+                { id: 'consumption', label: 'Verbrauch', align: 'right' },
+                { id: 'gridImport', label: 'Nachbar-Strom', align: 'right' },
+                { id: 'selfConsumption', label: 'Eigenverbrauch', align: 'right' },
+                { id: 'costs', label: 'Kosten', align: 'right' },
+                { id: 'savings', label: 'Einsparungen', align: 'right' },
+                { id: 'savingsPercent', label: 'Ersparnis %', align: 'right' },
+              ]}
+              rows={yearlyGridImport
+                .map((item) => {
+                  // Estimate consumption based on grid import and autarkie percentage
+                  // If we don't have exact consumption, we'll use current year's ratio
+                  const gridImport = item.gridImport || 0;
+                  const consumption = autarkieStats
+                    ? gridImport / (1 - autarkieStats.autarkie / 100)
+                    : gridImport;
+
+                  const costs = calculateYearlyCosts(consumption, gridImport);
+
+                  return {
+                    year: item.year,
+                    consumption: `${consumption.toFixed(0)} kWh`,
+                    gridImport: `${gridImport.toFixed(0)} kWh`,
+                    selfConsumption: `${costs.selfConsumption.toFixed(0)} kWh`,
+                    costs: formatCurrency(costs.neighborCost),
+                    savings: formatCurrency(costs.solarSavings),
+                    savingsPercent: `${((costs.solarSavings / costs.costWithoutSolar) * 100).toFixed(0)}%`,
+                  };
+                })
+                .reverse()}
+            />
+          </Box>
+
+          {/* Current Year Summary Cards */}
+          {yearlyCosts && (
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' },
+                gap: 3,
+                mb: 4,
+              }}
+            >
+              <StatCard
+                title={`${new Date().getFullYear()}: Kosten Nachbar-Strom`}
+                value={formatCurrency(yearlyCosts.neighborCost)}
+                subtitle={`${autarkieStats?.grid_history_from.toFixed(0)} kWh × ${ELECTRICITY_PRICE_RAPPEN} Rp`}
+                icon={<PowerIcon />}
+                color="error"
+              />
+              <StatCard
+                title={`${new Date().getFullYear()}: Solar-Einsparungen`}
+                value={formatCurrency(yearlyCosts.solarSavings)}
+                subtitle={`${yearlyCosts.selfConsumption.toFixed(0)} kWh Eigenverbrauch`}
+                icon={<SavingsIcon />}
+                color="success"
+              />
+              <StatCard
+                title={`${new Date().getFullYear()}: Kosten ohne Solar`}
+                value={formatCurrency(yearlyCosts.costWithoutSolar)}
+                subtitle="Hypothetische Gesamtkosten"
+                icon={<ElectricBoltIcon />}
+                color="warning"
+              />
+              <StatCard
+                title={`${new Date().getFullYear()}: Total gespart`}
+                value={formatCurrency(yearlyCosts.solarSavings)}
+                subtitle={`${((yearlyCosts.solarSavings / yearlyCosts.costWithoutSolar) * 100).toFixed(0)}% Ersparnis`}
+                icon={<SavingsIcon />}
+                color="success"
+              />
+            </Box>
+          )}
+
+          {/* Info Alert */}
+          <Alert severity="info" icon={<InfoIcon />}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Strom vom Nachbarn: {ELECTRICITY_PRICE_RAPPEN} Rp/kWh
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Basierend auf Schweizer Durchschnittspreis (nicht am öffentlichen Netz angeschlossen)
+                </Typography>
+              </Box>
+              <MuiLink
+                href={ELECTRICITY_PRICE_SOURCE}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+              >
+                <Typography variant="body2">Referenz: ElCom</Typography>
+                <OpenInNewIcon sx={{ fontSize: 16 }} />
+              </MuiLink>
+            </Box>
+          </Alert>
         </Box>
       </Box>
     </Container>

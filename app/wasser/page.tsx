@@ -90,7 +90,7 @@ export default function WaterPage() {
             💧 Wasserverbrauch
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Ihr Verbrauch im Vergleich zum Schweizer Durchschnitt
+            Unser Verbrauch im Vergleich zum Schweizer Durchschnitt
           </Typography>
         </Box>
 
@@ -157,7 +157,7 @@ export default function WaterPage() {
                   Wasser-Effizienz-Meister!
                 </Typography>
                 <Typography variant="body1" color="text.secondary" paragraph>
-                  Sie verbrauchen nur <strong>{(currentStats.dailyPerPerson / SWISS_AVERAGE_DAILY * 100).toFixed(1)}%</strong> des
+                  Wir verbrauchen nur <strong>{(currentStats.dailyPerPerson / SWISS_AVERAGE_DAILY * 100).toFixed(1)}%</strong> des
                   Schweizer Durchschnitts
                 </Typography>
                 <Typography variant="body2" color="success.main" sx={{ fontWeight: 600 }}>

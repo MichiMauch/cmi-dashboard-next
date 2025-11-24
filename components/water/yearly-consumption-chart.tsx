@@ -48,7 +48,7 @@ export function YearlyConsumptionChart({ data }: YearlyConsumptionChartProps) {
         series={[
           {
             dataKey: 'consumption',
-            label: 'Ihr Verbrauch',
+            label: 'Unser Verbrauch',
             color: '#0ea5e9',
             valueFormatter: (value, context) => {
               const item = chartData[context.dataIndex];

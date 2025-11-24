@@ -54,13 +54,13 @@ export function UsageBreakdownChart({
       {showComparison && (
         <Box sx={{ mt: 3, px: 2 }}>
           <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
-            Schweizer Durchschnitt vs. Ihr geschätzter Verbrauch
+            Schweizer Durchschnitt vs. Unser geschätzter Verbrauch
           </Typography>
           <Divider sx={{ my: 1 }} />
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 1, fontSize: '0.875rem' }}>
             <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>Verwendung</Typography>
             <Typography variant="body2" color="text.secondary" align="right" sx={{ fontWeight: 600 }}>CH-Ø</Typography>
-            <Typography variant="body2" color="text.secondary" align="right" sx={{ fontWeight: 600 }}>Sie</Typography>
+            <Typography variant="body2" color="text.secondary" align="right" sx={{ fontWeight: 600 }}>Wir</Typography>
 
             {averageBreakdown.map((item, idx) => (
               <Box key={idx} sx={{ display: 'contents' }}>
