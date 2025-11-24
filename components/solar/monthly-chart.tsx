@@ -22,10 +22,19 @@ export function MonthlyChart({ data }: MonthlyChartProps) {
     return <div>Keine Daten verfügbar</div>;
   }
 
+  // Debug: Log data to console to see what we're receiving
+  console.log('[MonthlyChart] Rendering with data:', JSON.stringify(data, null, 2));
+  console.log('[MonthlyChart] Consumption values:', data.map(d => ({ month: d.month, consumption: d.consumption })));
+
   return (
     <BarChart
       dataset={data}
-      xAxis={[{ dataKey: 'month' }]}
+      xAxis={[
+        {
+          scaleType: 'band',
+          dataKey: 'month',
+        },
+      ]}
       series={[
         {
           dataKey: 'yield',

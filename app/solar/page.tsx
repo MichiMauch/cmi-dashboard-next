@@ -140,6 +140,13 @@ export default async function SolarPage() {
     };
   });
 
+  // Debug: Log monthly chart data to understand what's being passed
+  console.log('[SolarPage] Monthly chart data:', monthlyChartData.map(d => ({
+    month: d.month,
+    yield: d.yield,
+    consumption: d.consumption,
+  })));
+
   // Prepare peak power chart data (already in chronological order: old left, new right)
   const peakPowerChartData = peakPowerHistory.map((item) => ({
     date: new Date(item.timestamp).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
