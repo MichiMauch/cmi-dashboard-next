@@ -180,9 +180,15 @@ export async function fetchLast24Months(): Promise<MonthStats[]> {
       const records = stats.records;
 
       // Extract aggregated values from API response (pre-calculated by Victron API)
-      // For interval=months, the API sometimes returns multiple values - take the last one
-      const totalSolarYield = records.total_solar_yield?.[records.total_solar_yield.length - 1]?.[1] ?? 0;
-      const totalConsumption = records.total_consumption?.[records.total_consumption.length - 1]?.[1] ?? 0;
+      // For interval=months, the API sometimes returns multiple values
+      // We take the MAXIMUM value to ensure we get the accumulated total, not a small initial value
+      // Note: API returns different tuple sizes for different intervals, so we use any to handle this
+      const totalSolarYield = records.total_solar_yield && records.total_solar_yield.length > 0
+        ? Math.max(...records.total_solar_yield.map((item: any) => item[1]))
+        : 0;
+      const totalConsumption = records.total_consumption && records.total_consumption.length > 0
+        ? Math.max(...records.total_consumption.map((item: any) => item[1]))
+        : 0;
       const gridHistoryFrom = records.grid_history_from?.[records.grid_history_from.length - 1]?.[1] ?? 0;
 
       return {
