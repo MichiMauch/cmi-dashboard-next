@@ -10,7 +10,6 @@ import { DataTable, DataTableColumn } from '@/components/shared/data-table';
 import { GaugeCard } from '@/components/shared/gauge-card';
 import { YearlyConsumptionChart } from '@/components/water/yearly-consumption-chart';
 import { PerCapitaComparison } from '@/components/water/per-capita-comparison';
-import { UsageBreakdownChart } from '@/components/water/usage-breakdown-chart';
 import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import SavingsIcon from '@mui/icons-material/Savings';
@@ -19,9 +18,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   yearlyConsumption,
-  usageBreakdown,
   getCurrentYearStats,
-  getYourUsageBreakdown,
   SWISS_AVERAGE_DAILY,
   SOURCE_INFO,
 } from '@/lib/water-data';
@@ -43,7 +40,6 @@ export default function WaterPage() {
     );
   }
 
-  const yourUsageBreakdown = getYourUsageBreakdown(currentStats.dailyPerPerson);
   const completeYears = yearlyConsumption.filter((y) => y.isComplete);
 
   // Prepare table data
@@ -175,45 +171,14 @@ export default function WaterPage() {
           </ChartCard>
         </Box>
 
-        {/* Comparison Charts */}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' },
-            gap: 3,
-            mb: 4,
-          }}
-        >
+        {/* Pro-Kopf-Vergleich */}
+        <Box sx={{ mb: 4 }}>
           <ChartCard title="Pro-Kopf-Vergleich" height={380}>
             <PerCapitaComparison
               yourDailyLiters={currentStats.dailyPerPerson}
               averageDailyLiters={SWISS_AVERAGE_DAILY}
             />
           </ChartCard>
-
-          <ChartCard title="Verwendung des Wassers" height={380}>
-            <UsageBreakdownChart
-              averageBreakdown={usageBreakdown}
-              yourBreakdown={yourUsageBreakdown}
-              showComparison={false}
-            />
-          </ChartCard>
-        </Box>
-
-        {/* Detailed Breakdown Table */}
-        <Box sx={{ mb: 4 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-                Detaillierte Verwendungsaufschlüsselung
-              </Typography>
-              <UsageBreakdownChart
-                averageBreakdown={usageBreakdown}
-                yourBreakdown={yourUsageBreakdown}
-                showComparison={true}
-              />
-            </CardContent>
-          </Card>
         </Box>
 
         {/* Key Insights */}

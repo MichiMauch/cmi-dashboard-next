@@ -15,7 +15,6 @@ import {
 import { getCachedOrFetch } from '@/lib/dev-cache';
 import {
   calculateYearlyCosts,
-  calculateMonthlyCosts,
   calculateDailyCosts,
   formatCurrency,
   ELECTRICITY_PRICE_RAPPEN,
@@ -148,13 +147,10 @@ export default async function SolarPage() {
 
   // Prepare table data (format on server, reverse copy for newest first)
   const last7DaysRows = [...last7Days].reverse().map((item) => {
-    const costs = calculateDailyCosts(item.total_consumption, item.total_energy_imported || 0);
     return {
       timestamp: new Date(item.timestamp).toLocaleDateString('de-DE'),
       total_solar_yield: `${item.total_solar_yield.toFixed(2)} kWh`,
       total_consumption: `${item.total_consumption.toFixed(2)} kWh`,
-      costs: formatCurrency(costs.neighborCost),
-      savings: formatCurrency(costs.solarSavings),
     };
   });
 
@@ -162,19 +158,14 @@ export default async function SolarPage() {
     { id: 'timestamp', label: 'Datum' },
     { id: 'total_solar_yield', label: 'Ertrag', align: 'right' },
     { id: 'total_consumption', label: 'Verbrauch', align: 'right' },
-    { id: 'costs', label: 'Kosten', align: 'right' },
-    { id: 'savings', label: 'Einsparungen', align: 'right' },
   ];
 
   const monthlyDataRows = last24Months.slice(0, 12).map((item) => {
-    const costs = calculateMonthlyCosts(item.total_consumption, item.grid_history_from);
     return {
       timestamp: new Date(item.timestamp).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }),
       total_solar_yield: `${item.total_solar_yield.toFixed(2)} kWh`,
       total_consumption: `${item.total_consumption.toFixed(2)} kWh`,
       grid_history_from: `${item.grid_history_from.toFixed(2)} kWh`,
-      costs: formatCurrency(costs.neighborCost),
-      savings: formatCurrency(costs.solarSavings),
     };
   });
 
@@ -183,8 +174,6 @@ export default async function SolarPage() {
     { id: 'total_solar_yield', label: 'Solar Ertrag', align: 'right' },
     { id: 'total_consumption', label: 'Verbrauch', align: 'right' },
     { id: 'grid_history_from', label: 'Nachbar-Strom', align: 'right' },
-    { id: 'costs', label: 'Kosten', align: 'right' },
-    { id: 'savings', label: 'Einsparungen', align: 'right' },
   ];
 
   // Calculate peak power for today
