@@ -12,6 +12,11 @@ import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import OpacityIcon from '@mui/icons-material/Opacity';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
+import BoltIcon from '@mui/icons-material/Bolt';
+import BatteryChargingFullIcon from '@mui/icons-material/BatteryChargingFull';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import { StatCard } from '@/components/shared/stat-card';
 
 interface DayForecast {
   dayName: string;
@@ -38,9 +43,29 @@ interface LaundryForecast {
   allDays: DayForecast[];
 }
 
+interface DashboardOverview {
+  heating: {
+    ofen: number;
+    speicherOben: number;
+    speicherUnten: number;
+  };
+  solar: {
+    currentPower: number;
+    battery: number;
+    todayYield: number;
+  };
+  weather: {
+    temperature: number;
+    humidity: number;
+    visibility: number;
+  };
+}
+
 export default function DashboardPage() {
   const [forecast, setForecast] = useState<LaundryForecast | null>(null);
+  const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [overviewLoading, setOverviewLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -59,6 +84,61 @@ export default function DashboardPage() {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchOverview = async () => {
+    try {
+      setOverviewLoading(true);
+
+      // Fetch all data in parallel
+      const [heatingRes, solarRes, weatherRes] = await Promise.all([
+        fetch('/api/data', { cache: 'no-store' }),
+        fetch('/api/victron/stats?interval=15mins', { cache: 'no-store' }),
+        fetch('/api/weather', { cache: 'no-store' }),
+      ]);
+
+      if (!heatingRes.ok || !solarRes.ok || !weatherRes.ok) {
+        throw new Error('Failed to fetch overview data');
+      }
+
+      const heatingData = await heatingRes.json();
+      const solarData = await solarRes.json();
+      const weatherData = await weatherRes.json();
+
+      // Extract heating temps (current_temps array)
+      const temps = heatingData.current_temps || [];
+      const ofen = temps.find((t: any) => t.ort === 'Ofen')?.wert || 0;
+      const speicherOben = temps.find((t: any) => t.ort === 'Speicher Oben')?.wert || 0;
+      const speicherUnten = temps.find((t: any) => t.ort === 'Speicher Unten')?.wert || 0;
+
+      // Extract solar data
+      const solar = solarData.processed || {};
+
+      // Extract weather data
+      const weather = weatherData.current || {};
+
+      setOverview({
+        heating: {
+          ofen,
+          speicherOben,
+          speicherUnten,
+        },
+        solar: {
+          currentPower: solar.currentPower || 0,
+          battery: solar.batteryCharge || 0,
+          todayYield: solar.todayYield || 0,
+        },
+        weather: {
+          temperature: weather.temp || 0,
+          humidity: weather.humidity || 0,
+          visibility: weather.visibility ? weather.visibility / 1000 : 0, // Convert m to km
+        },
+      });
+    } catch (err) {
+      console.error('Error fetching overview:', err);
+    } finally {
+      setOverviewLoading(false);
     }
   };
 
@@ -90,6 +170,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchForecast();
+    fetchOverview();
   }, []);
 
   return (
@@ -110,6 +191,88 @@ export default function DashboardPage() {
         >
           Dashboard
         </Typography>
+
+        {/* Dashboard Overview Cards */}
+        {overviewLoading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4, mb: 4 }}>
+            <CircularProgress />
+          </Box>
+        )}
+
+        {overview && !overviewLoading && (
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)',
+              },
+              gap: 3,
+              mb: 4,
+            }}
+          >
+            {/* Heating Section */}
+            <StatCard
+              title="Ofen"
+              value={`${overview.heating.ofen.toFixed(1)}°C`}
+              icon={<LocalFireDepartmentIcon />}
+              color="error"
+            />
+            <StatCard
+              title="Speicher Oben"
+              value={`${overview.heating.speicherOben.toFixed(1)}°C`}
+              icon={<ThermostatIcon />}
+              color="warning"
+            />
+            <StatCard
+              title="Speicher Unten"
+              value={`${overview.heating.speicherUnten.toFixed(1)}°C`}
+              icon={<ThermostatIcon />}
+              color="info"
+            />
+
+            {/* Solar Section */}
+            <StatCard
+              title="Aktuelle Leistung"
+              value={`${overview.solar.currentPower.toFixed(0)} W`}
+              icon={<BoltIcon />}
+              color="success"
+            />
+            <StatCard
+              title="Batterie"
+              value={`${overview.solar.battery.toFixed(0)}%`}
+              icon={<BatteryChargingFullIcon />}
+              color="primary"
+            />
+            <StatCard
+              title="Heutiger Ertrag"
+              value={`${overview.solar.todayYield.toFixed(1)} kWh`}
+              icon={<WbSunnyIcon />}
+              color="warning"
+            />
+
+            {/* Weather Section */}
+            <StatCard
+              title="Temperatur"
+              value={`${overview.weather.temperature.toFixed(1)}°C`}
+              icon={<ThermostatIcon />}
+              color="info"
+            />
+            <StatCard
+              title="Luftfeuchtigkeit"
+              value={`${overview.weather.humidity.toFixed(0)}%`}
+              icon={<OpacityIcon />}
+              color="primary"
+            />
+            <StatCard
+              title="Sichtweite"
+              value={`${overview.weather.visibility.toFixed(1)} km`}
+              icon={<VisibilityIcon />}
+              color="success"
+            />
+          </Box>
+        )}
 
         {/* Laundry Forecast Card */}
         <Card elevation={3} sx={{ mb: 4 }}>
