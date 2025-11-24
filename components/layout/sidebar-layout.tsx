@@ -101,8 +101,8 @@ export function SidebarLayout({ children, mode, onToggleMode }: SidebarLayoutPro
             <Image
               src="/favicon.png"
               alt="CMI Logo"
-              width={32}
-              height={32}
+              width={40}
+              height={40}
               style={{ objectFit: 'contain' }}
             />
             <Typography variant="h6" noWrap component="div">
@@ -126,11 +126,13 @@ export function SidebarLayout({ children, mode, onToggleMode }: SidebarLayoutPro
           '& .MuiDrawer-paper': {
             width: DRAWER_WIDTH,
             boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'column',
           },
         }}
       >
         <Toolbar />
-        <Box sx={{ overflow: 'auto' }}>
+        <Box sx={{ overflow: 'auto', flexGrow: 1 }}>
           <List>
             {navigationItems.map((item) => (
               <ListItem key={item.text} disablePadding>
@@ -144,6 +146,15 @@ export function SidebarLayout({ children, mode, onToggleMode }: SidebarLayoutPro
               </ListItem>
             ))}
           </List>
+        </Box>
+        <Box sx={{ p: 2, textAlign: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.12)' }}>
+          <Image
+            src="/favicon.png"
+            alt="CMI Logo"
+            width={DRAWER_WIDTH - 40}
+            height={DRAWER_WIDTH - 40}
+            style={{ objectFit: 'contain', width: '100%', height: 'auto' }}
+          />
         </Box>
       </Drawer>
 
