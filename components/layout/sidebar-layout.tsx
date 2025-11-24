@@ -29,6 +29,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import BoltIcon from '@mui/icons-material/Bolt';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';
+import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 
@@ -45,6 +46,7 @@ const navigationItems: NavigationItem[] = [
   { text: 'Ofen', icon: <LocalFireDepartmentIcon />, path: '/heating' },
   { text: 'Strom', icon: <BoltIcon />, path: '/solar' },
   { text: 'Wetter', icon: <WbSunnyIcon />, path: '/weather' },
+  { text: 'Wasser', icon: <WaterDropIcon />, path: '/wasser' },
 ];
 
 interface SidebarLayoutProps {
