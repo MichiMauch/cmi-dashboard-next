@@ -1,0 +1,106 @@
+================================================================================
+SOLAR DASHBOARD - VOLLSTÄNDIGER DATENEXPORT FÜR INFOGRAFIK
+Stand: 24.11.2025 22:54 Uhr
+================================================================================
+
+📊 LIVE-DATEN (AKTUELL)
+--------------------------------------------------------------------------------
+🌞 Solarleistung:        0 W (Nachts)
+🔋 Batterieladung:       29.5%
+⚡ Netzleistung:         1 W
+💡 Verbrauch:            0 W
+☀️  Ertrag heute:        0.62 kWh
+🏠 Verbrauch heute:      1.89 kWh
+
+🔥 HEIZUNG (AKTUELL)
+--------------------------------------------------------------------------------
+Temperatur Ofen:         68.7°C
+Speicher oben:           61.7°C
+Speicher unten:          62.5°C
+
+🌤️  WETTER (AKTUELL)
+--------------------------------------------------------------------------------
+Temperatur:              3.0°C
+Luftfeuchtigkeit:        96%
+Sichtweite:              0.3 km
+Windgeschwindigkeit:     0.0 m/s
+
+📈 JAHRESSTATISTIKEN 2025
+--------------------------------------------------------------------------------
+☀️  Solar Ertrag (Jahr):  1,311 kWh
+⚡ Verbrauch (Jahr):      329 kWh
+🔌 Netzbezug (Jahr):      16 kWh
+🎯 Autarkie:              95.2%
+📊 Eigenverbrauch:        313 kWh
+
+💰 STROMKOSTEN & EINSPARUNGEN 2025
+--------------------------------------------------------------------------------
+Strompreis:              27.7 Rp/kWh (Nachbar-Strom)
+💵 Kosten Nachbar-Strom: 4.39 CHF
+💚 Solar-Einsparungen:   86.75 CHF
+💸 Kosten ohne Solar:    91.20 CHF
+📊 Ersparnis:            95%
+
+📊 LETZTE 11 TAGE (Beispiel)
+--------------------------------------------------------------------------------
+Datum        | Solar Ertrag | Verbrauch
+-------------|--------------|----------
+24.11.2025   | 0.62 kWh     | 1.89 kWh
+23.11.2025   | 3.32 kWh     | 2.28 kWh
+22.11.2025   | 2.61 kWh     | 2.42 kWh
+21.11.2025   | 2.74 kWh     | 2.52 kWh
+20.11.2025   | 0.94 kWh     | 2.14 kWh
+19.11.2025   | 3.07 kWh     | 2.51 kWh
+18.11.2025   | 3.57 kWh     | 2.39 kWh
+17.11.2025   | 0.89 kWh     | 2.13 kWh
+16.11.2025   | 0.89 kWh     | 2.16 kWh
+15.11.2025   | 2.41 kWh     | 2.17 kWh
+14.11.2025   | 1.85 kWh     | 1.71 kWh
+
+📊 MONATLICHE DATEN (12 Monate)
+--------------------------------------------------------------------------------
+Monat        | Solar Ertrag | Verbrauch | Nachbar-Strom
+-------------|--------------|-----------|---------------
+November 25  | 51.8 kWh     | 50.6 kWh  | 1.3 kWh
+Oktober 25   | 88.5 kWh     | 80.1 kWh  | 0.0 kWh
+September 25 | 118.8 kWh    | 105.0 kWh | 0.0 kWh
+August 25    | 144.6 kWh    | 129.7 kWh | 0.0 kWh
+Juli 25      | 143.8 kWh    | 129.2 kWh | 0.0 kWh
+Juni 25      | 159.8 kWh    | 142.7 kWh | 0.0 kWh
+Mai 25       | 161.8 kWh    | 144.5 kWh | 0.0 kWh
+April 25     | 164.0 kWh    | 147.1 kWh | 0.0 kWh
+März 25      | 107.1 kWh    | 96.4 kWh  | 0.0 kWh
+Februar 25   | 78.1 kWh     | 69.7 kWh  | 6.9 kWh
+Januar 25    | 79.4 kWh     | 73.4 kWh  | 7.6 kWh
+Dezember 24  | 47.7 kWh     | 43.5 kWh  | 26.8 kWh
+
+📊 JÄHRLICHE KOSTEN (Letzte Jahre)
+--------------------------------------------------------------------------------
+Jahr  | Verbrauch | Nachbar-Strom | Eigenverbrauch | Kosten  | Einsparungen
+------|-----------|---------------|----------------|---------|-------------
+2025  | 329 kWh   | 16 kWh        | 313 kWh        | 4 CHF   | 87 CHF
+2024  | 1,473 kWh | 71 kWh        | 1,402 kWh      | 20 CHF  | 388 CHF
+2023  | 633 kWh   | 63 kWh        | 570 kWh        | 17 CHF  | 158 CHF
+2022  | 235 kWh   | 23 kWh        | 211 kWh        | 6 CHF   | 59 CHF
+
+💡 HIGHLIGHTS
+--------------------------------------------------------------------------------
+✅ Sehr hohe Autarkie von 95.2% im Jahr 2025
+✅ Nur 16 kWh vom Nachbarn bezogen (Jan-Nov 2025)
+✅ 313 kWh Eigenverbrauch aus Solar
+✅ Jährliche Einsparung von ca. 87 CHF (11 Monate)
+✅ Fast vollständig autark in den Sommermonaten (Apr-Okt)
+✅ Nur in Wintermonaten geringer Netzbezug nötig
+
+🎯 WICHTIGSTE KENNZAHLEN FÜR INFOGRAFIK
+--------------------------------------------------------------------------------
+1. Autarkie 2025:          95.2%
+2. Solar-Ertrag 2025:      1,311 kWh
+3. Eigenverbrauch:         313 kWh (95% des Gesamtverbrauchs)
+4. Netzbezug gesamt:       16 kWh (nur 5% des Verbrauchs)
+5. Ersparnis:              87 CHF pro Jahr
+6. Strompreis:             27.7 Rp/kWh
+7. Peak Power (max):       ~3,500 W
+8. Batterie:               ~30% aktuell geladen
+
+================================================================================

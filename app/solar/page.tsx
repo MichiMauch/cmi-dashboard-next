@@ -20,6 +20,7 @@ import {
   ELECTRICITY_PRICE_RAPPEN,
   ELECTRICITY_PRICE_SOURCE,
 } from '@/lib/electricity-costs';
+import { getGridPeriods, calculateDays, isActivePeriod } from '@/lib/grid-periods';
 import { LiveStats } from '@/components/solar/live-stats';
 import { MonthlyChart } from '@/components/solar/monthly-chart';
 import { YearlyGridChart } from '@/components/solar/yearly-grid-chart';
@@ -176,6 +177,29 @@ export default async function SolarPage() {
     { id: 'grid_history_from', label: 'Nachbar-Strom', align: 'right' },
   ];
 
+  // Prepare grid periods table data
+  const gridPeriods = getGridPeriods();
+  const gridPeriodsRows = gridPeriods.map((period) => {
+    const days = calculateDays(period.gridOn, period.gridOff);
+    const isActive = isActivePeriod(period);
+
+    return {
+      gridOn: new Date(period.gridOn).toLocaleDateString('de-DE'),
+      gridOff: isActive
+        ? '🔌 Noch am Netz'
+        : new Date(period.gridOff!).toLocaleDateString('de-DE'),
+      days: `${days} ${days === 1 ? 'Tag' : 'Tage'}`,
+      status: isActive ? '🔴 Aktiv' : '✅ Abgeschlossen',
+    };
+  }).reverse(); // Newest first
+
+  const gridPeriodsColumns: DataTableColumn[] = [
+    { id: 'gridOn', label: 'Grid On' },
+    { id: 'gridOff', label: 'Grid Off' },
+    { id: 'days', label: 'Anzahl Tage', align: 'right' },
+    { id: 'status', label: 'Status' },
+  ];
+
   // Calculate peak power for today
   const todayPeak = peakPowerHistory[0]?.peak_power || 0;
 
@@ -283,6 +307,18 @@ export default async function SolarPage() {
             />
           )}
         </Box>
+
+        {/* Grid Periods Table */}
+        {gridPeriodsRows.length > 0 && (
+          <Box sx={{ mb: 4 }}>
+            <DataTable
+              title="🔌 Netzstrom-Perioden"
+              columns={gridPeriodsColumns}
+              rows={gridPeriodsRows}
+              maxHeight={400}
+            />
+          </Box>
+        )}
 
         {/* Monthly Yield Chart */}
         {monthlyChartData.length > 0 && (
