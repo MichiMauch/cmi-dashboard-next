@@ -13,6 +13,8 @@ import OpacityIcon from '@mui/icons-material/Opacity';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
 import BoltIcon from '@mui/icons-material/Bolt';
 import BatteryChargingFullIcon from '@mui/icons-material/BatteryChargingFull';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -44,10 +46,10 @@ interface LaundryForecast {
 }
 
 interface DashboardOverview {
-  heating: {
-    ofen: number;
-    speicherOben: number;
-    speicherUnten: number;
+  fireEvents: {
+    total: number;
+    thisMonth: number;
+    avgPerMonth: number;
   };
   solar: {
     currentPower: number;
@@ -106,11 +108,14 @@ export default function DashboardPage() {
       const solarData = await solarRes.json();
       const weatherData = await weatherRes.json();
 
-      // Extract heating temps (current_temps array)
-      const temps = heatingData.current_temps || [];
-      const ofen = temps.find((t: any) => t.ort === 'Ofen')?.wert || 0;
-      const speicherOben = temps.find((t: any) => t.ort === 'Speicher Oben')?.wert || 0;
-      const speicherUnten = temps.find((t: any) => t.ort === 'Speicher Unten')?.wert || 0;
+      // Extract fire event data
+      const fireEvents = heatingData.fire_events || [];
+      const monthlyStats = heatingData.monthly_stats || [];
+      const totalEvents = fireEvents.length;
+      const thisMonth = monthlyStats[0]?.count ?? 0;
+      const avgPerMonth = monthlyStats.length > 0
+        ? monthlyStats.reduce((sum: number, stat: any) => sum + stat.count, 0) / monthlyStats.length
+        : 0;
 
       // Extract solar data
       const solar = solarData.processed || {};
@@ -119,10 +124,10 @@ export default function DashboardPage() {
       const weather = weatherData.current || {};
 
       setOverview({
-        heating: {
-          ofen,
-          speicherOben,
-          speicherUnten,
+        fireEvents: {
+          total: totalEvents,
+          thisMonth,
+          avgPerMonth,
         },
         solar: {
           currentPower: solar.currentPower || 0,
@@ -212,23 +217,23 @@ export default function DashboardPage() {
               mb: 4,
             }}
           >
-            {/* Heating Section */}
+            {/* Fire Events Section */}
             <StatCard
-              title="Ofen"
-              value={`${overview.heating.ofen.toFixed(1)}°C`}
+              title="Gesamt Feuer-Events"
+              value={overview.fireEvents.total}
               icon={<LocalFireDepartmentIcon />}
               color="error"
             />
             <StatCard
-              title="Speicher Oben"
-              value={`${overview.heating.speicherOben.toFixed(1)}°C`}
-              icon={<ThermostatIcon />}
+              title="Dieser Monat"
+              value={overview.fireEvents.thisMonth}
+              icon={<CalendarMonthIcon />}
               color="warning"
             />
             <StatCard
-              title="Speicher Unten"
-              value={`${overview.heating.speicherUnten.toFixed(1)}°C`}
-              icon={<ThermostatIcon />}
+              title="Ø pro Monat"
+              value={overview.fireEvents.avgPerMonth.toFixed(1)}
+              icon={<ShowChartIcon />}
               color="info"
             />
 
