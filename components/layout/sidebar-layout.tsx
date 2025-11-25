@@ -44,7 +44,7 @@ interface NavigationItem {
 
 const navigationItems: NavigationItem[] = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-  { text: 'Ofen', icon: <LocalFireDepartmentIcon />, path: '/heating' },
+  { text: 'Heizung', icon: <LocalFireDepartmentIcon />, path: '/heating' },
   { text: 'Strom', icon: <BoltIcon />, path: '/solar' },
   { text: 'Wasser', icon: <WaterDropIcon />, path: '/wasser' },
   { text: 'Wetter', icon: <WbSunnyIcon />, path: '/weather' },
