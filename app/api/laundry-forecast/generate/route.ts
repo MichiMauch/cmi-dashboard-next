@@ -59,7 +59,7 @@ function prepareWeatherDataForAI(weatherData: ProcessedWeatherData) {
   return dailyForecasts;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     console.log('[GenerateForecast] Starting forecast generation...');
 
@@ -72,18 +72,11 @@ export async function GET() {
       );
     }
 
-    if (!BLOB_READ_WRITE_TOKEN) {
-      console.error('[GenerateForecast] BLOB_READ_WRITE_TOKEN not configured');
-      return NextResponse.json(
-        { error: 'BLOB_READ_WRITE_TOKEN not configured' },
-        { status: 500 }
-      );
-    }
+    const canSaveToBlob = !!BLOB_READ_WRITE_TOKEN;
 
-    // Fetch weather data
-    const baseUrl = process.env.NODE_ENV === 'production'
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'cmi-dashboard-next.vercel.app'}`
-      : 'http://localhost:3000';
+    // Fetch weather data - use request URL to get correct host/port
+    const requestUrl = new URL(request.url);
+    const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
 
     const weatherUrl = `${baseUrl}/api/weather`;
     console.log('[GenerateForecast] Fetching weather from:', weatherUrl);
@@ -197,18 +190,25 @@ WICHTIG: Bei gleicher Regenwahrscheinlichkeit gewinnt der Tag mit niedrigerer Lu
 
     console.log('[GenerateForecast] Forecast generated successfully');
 
-    // Save to Vercel Blob
-    const blob = await put('laundry-forecast.json', JSON.stringify(forecast, null, 2), {
-      access: 'public',
-      addRandomSuffix: false, // Always overwrite same file
-    });
-
-    console.log('[GenerateForecast] Saved to Blob:', blob.url);
+    // Save to Vercel Blob (only if token is available)
+    let blobUrl: string | undefined;
+    if (canSaveToBlob) {
+      const blob = await put('laundry-forecast.json', JSON.stringify(forecast, null, 2), {
+        access: 'public',
+        addRandomSuffix: false,
+        allowOverwrite: true, // Allow overwriting existing file
+      });
+      blobUrl = blob.url;
+      console.log('[GenerateForecast] Saved to Blob:', blob.url);
+    } else {
+      console.log('[GenerateForecast] Blob storage not available, returning forecast directly');
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Forecast generated and saved',
-      blob_url: blob.url,
+      message: canSaveToBlob ? 'Forecast generated and saved' : 'Forecast generated (not saved - no blob token)',
+      blob_url: blobUrl,
+      forecast: canSaveToBlob ? undefined : forecast,
       generated_at: forecast.generated_at,
       next_update: forecast.next_update,
     });

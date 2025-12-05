@@ -165,8 +165,30 @@ export function SidebarLayout({ children, mode, onToggleMode }: SidebarLayoutPro
         }}
       >
         <Toolbar />
-        <Box sx={{ overflow: 'auto', flexGrow: 1 }}>
-          <List>
+        <Box
+          sx={{
+            overflow: 'auto',
+            flexGrow: 1,
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              bottom: 16,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '80%',
+              aspectRatio: '1 / 1',
+              backgroundImage: 'url(/favicon.png)',
+              backgroundSize: 'contain',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              opacity: 0.08,
+              pointerEvents: 'none',
+              zIndex: 0,
+            },
+          }}
+        >
+          <List sx={{ position: 'relative', zIndex: 1 }}>
             {navigationItems.map((item) => (
               <React.Fragment key={item.text}>
                 {item.children ? (
@@ -219,15 +241,6 @@ export function SidebarLayout({ children, mode, onToggleMode }: SidebarLayoutPro
               </React.Fragment>
             ))}
           </List>
-        </Box>
-        <Box sx={{ p: 2, textAlign: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.12)' }}>
-          <Image
-            src="/favicon.png"
-            alt="CMI Logo"
-            width={DRAWER_WIDTH - 40}
-            height={DRAWER_WIDTH - 40}
-            style={{ objectFit: 'contain', width: '100%', height: 'auto' }}
-          />
         </Box>
       </Drawer>
 
