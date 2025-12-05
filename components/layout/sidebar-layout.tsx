@@ -22,6 +22,7 @@ import {
   ListItemText,
   useTheme,
   useMediaQuery,
+  Collapse,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -30,6 +31,13 @@ import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import BoltIcon from '@mui/icons-material/Bolt';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import WaterDropIcon from '@mui/icons-material/WaterDrop';
+import ThermostatIcon from '@mui/icons-material/Thermostat';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import ExpandMore from '@mui/icons-material/ExpandMore';
+import KitchenIcon from '@mui/icons-material/Kitchen';
+import BathtubIcon from '@mui/icons-material/Bathtub';
+import ComputerIcon from '@mui/icons-material/Computer';
+import HotelIcon from '@mui/icons-material/Hotel';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import Image from 'next/image';
@@ -40,10 +48,23 @@ interface NavigationItem {
   text: string;
   icon: React.ReactNode;
   path: string;
+  children?: NavigationItem[];
 }
 
 const navigationItems: NavigationItem[] = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+  {
+    text: 'Klima inHouse',
+    icon: <ThermostatIcon />,
+    path: '/climate',
+    children: [
+      { text: 'Küche', icon: <KitchenIcon />, path: '/climate/kueche' },
+      { text: 'Bad', icon: <BathtubIcon />, path: '/climate/bad' },
+      { text: 'Büro', icon: <ComputerIcon />, path: '/climate/buero' },
+      { text: 'Schlafen', icon: <HotelIcon />, path: '/climate/schlafen' },
+      { text: 'Aussen', icon: <WbSunnyIcon />, path: '/climate/aussen' },
+    ],
+  },
   { text: 'Heizung', icon: <LocalFireDepartmentIcon />, path: '/heating' },
   { text: 'Strom', icon: <BoltIcon />, path: '/solar' },
   { text: 'Wasser', icon: <WaterDropIcon />, path: '/wasser' },
@@ -60,8 +81,16 @@ export function SidebarLayout({ children, mode, onToggleMode }: SidebarLayoutPro
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [open, setOpen] = useState(!isMobile);
+  const [climateOpen, setClimateOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+
+  // Auto-expand climate menu if on a climate subpage
+  React.useEffect(() => {
+    if (pathname.startsWith('/climate')) {
+      setClimateOpen(true);
+    }
+  }, [pathname]);
 
   const handleDrawerToggle = () => {
     setOpen(!open);
@@ -72,6 +101,10 @@ export function SidebarLayout({ children, mode, onToggleMode }: SidebarLayoutPro
     if (isMobile) {
       setOpen(false);
     }
+  };
+
+  const handleClimateToggle = () => {
+    setClimateOpen(!climateOpen);
   };
 
   return (
@@ -135,15 +168,55 @@ export function SidebarLayout({ children, mode, onToggleMode }: SidebarLayoutPro
         <Box sx={{ overflow: 'auto', flexGrow: 1 }}>
           <List>
             {navigationItems.map((item) => (
-              <ListItem key={item.text} disablePadding>
-                <ListItemButton
-                  selected={pathname === item.path}
-                  onClick={() => handleNavigation(item.path)}
-                >
-                  <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.text} />
-                </ListItemButton>
-              </ListItem>
+              <React.Fragment key={item.text}>
+                {item.children ? (
+                  // Item with submenu (Klima inHouse)
+                  <>
+                    <ListItem disablePadding>
+                      <ListItemButton
+                        selected={pathname === item.path}
+                        onClick={() => handleNavigation(item.path)}
+                      >
+                        <ListItemIcon>{item.icon}</ListItemIcon>
+                        <ListItemText primary={item.text} />
+                      </ListItemButton>
+                      <IconButton
+                        size="small"
+                        onClick={handleClimateToggle}
+                        sx={{ mr: 1 }}
+                      >
+                        {climateOpen ? <ExpandLess /> : <ExpandMore />}
+                      </IconButton>
+                    </ListItem>
+                    <Collapse in={climateOpen} timeout="auto" unmountOnExit>
+                      <List component="div" disablePadding>
+                        {item.children.map((child) => (
+                          <ListItemButton
+                            key={child.text}
+                            selected={pathname === child.path}
+                            onClick={() => handleNavigation(child.path)}
+                            sx={{ pl: 4 }}
+                          >
+                            <ListItemIcon sx={{ minWidth: 40 }}>{child.icon}</ListItemIcon>
+                            <ListItemText primary={child.text} />
+                          </ListItemButton>
+                        ))}
+                      </List>
+                    </Collapse>
+                  </>
+                ) : (
+                  // Regular item
+                  <ListItem disablePadding>
+                    <ListItemButton
+                      selected={pathname === item.path}
+                      onClick={() => handleNavigation(item.path)}
+                    >
+                      <ListItemIcon>{item.icon}</ListItemIcon>
+                      <ListItemText primary={item.text} />
+                    </ListItemButton>
+                  </ListItem>
+                )}
+              </React.Fragment>
             ))}
           </List>
         </Box>

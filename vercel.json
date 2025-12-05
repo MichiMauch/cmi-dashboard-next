@@ -3,6 +3,10 @@
     {
       "path": "/api/laundry-forecast/generate",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/shelly/collect",
+      "schedule": "0 */2 * * *"
     }
   ]
 }
