@@ -38,6 +38,7 @@ import KitchenIcon from '@mui/icons-material/Kitchen';
 import BathtubIcon from '@mui/icons-material/Bathtub';
 import ComputerIcon from '@mui/icons-material/Computer';
 import HotelIcon from '@mui/icons-material/Hotel';
+import PropaneTankIcon from '@mui/icons-material/PropaneTank';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import Image from 'next/image';
@@ -68,6 +69,7 @@ const navigationItems: NavigationItem[] = [
   { text: 'Heizung', icon: <LocalFireDepartmentIcon />, path: '/heating' },
   { text: 'Strom', icon: <BoltIcon />, path: '/solar' },
   { text: 'Wasser', icon: <WaterDropIcon />, path: '/wasser' },
+  { text: 'Gas', icon: <PropaneTankIcon />, path: '/gas' },
   { text: 'Wetter', icon: <WbSunnyIcon />, path: '/weather' },
 ];
 
