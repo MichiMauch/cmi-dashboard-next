@@ -7,6 +7,7 @@
 
 import React, { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 import {
   Box,
   Drawer,
@@ -41,6 +42,8 @@ import HotelIcon from '@mui/icons-material/Hotel';
 import PropaneTankIcon from '@mui/icons-material/PropaneTank';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
+import LogoutIcon from '@mui/icons-material/Logout';
+import LoginIcon from '@mui/icons-material/Login';
 import Image from 'next/image';
 
 const DRAWER_WIDTH = 240;
@@ -86,6 +89,8 @@ export function SidebarLayout({ children, mode, onToggleMode }: SidebarLayoutPro
   const [climateOpen, setClimateOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const { data: session } = useSession();
+  const isAuthenticated = !!session;
 
   // Auto-expand climate menu if on a climate subpage
   React.useEffect(() => {
@@ -147,6 +152,23 @@ export function SidebarLayout({ children, mode, onToggleMode }: SidebarLayoutPro
           <IconButton color="inherit" onClick={onToggleMode}>
             {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
           </IconButton>
+          {isAuthenticated ? (
+            <IconButton
+              color="inherit"
+              onClick={() => signOut({ callbackUrl: '/' })}
+              title="Abmelden"
+            >
+              <LogoutIcon />
+            </IconButton>
+          ) : (
+            <IconButton
+              color="inherit"
+              onClick={() => router.push('/login')}
+              title="Anmelden"
+            >
+              <LoginIcon />
+            </IconButton>
+          )}
         </Toolbar>
       </AppBar>
 

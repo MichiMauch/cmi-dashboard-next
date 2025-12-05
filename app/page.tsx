@@ -7,6 +7,7 @@
 
 import { Container, Typography, Box, Card, CardContent, CircularProgress, Alert, Button } from '@mui/material';
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import OpacityIcon from '@mui/icons-material/Opacity';
@@ -64,6 +65,8 @@ interface DashboardOverview {
 }
 
 export default function DashboardPage() {
+  const { data: session } = useSession();
+  const isAuthenticated = !!session;
   const [forecast, setForecast] = useState<LaundryForecast | null>(null);
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -302,15 +305,17 @@ export default function DashboardPage() {
                   Wäsche aufhängen - Beste Gelegenheit
                 </Typography>
               </Box>
-              <Button
-                variant="outlined"
-                startIcon={<RefreshIcon />}
-                onClick={handleRefresh}
-                disabled={refreshing || loading}
-                sx={{ ml: 2 }}
-              >
-                {refreshing ? 'Aktualisiere...' : 'Neu berechnen'}
-              </Button>
+              {isAuthenticated && (
+                <Button
+                  variant="outlined"
+                  startIcon={<RefreshIcon />}
+                  onClick={handleRefresh}
+                  disabled={refreshing || loading}
+                  sx={{ ml: 2 }}
+                >
+                  {refreshing ? 'Aktualisiere...' : 'Neu berechnen'}
+                </Button>
+              )}
             </Box>
 
             {loading && (

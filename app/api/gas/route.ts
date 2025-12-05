@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import GasBottle from '@/models/gas-bottle';
+import { requireAuth } from '@/lib/auth-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +30,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  // Require authentication for creating bottles
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
     await dbConnect();
 

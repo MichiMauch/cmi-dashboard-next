@@ -1,11 +1,12 @@
 /**
  * Gas Bottle Form Component
- * Form to add a new gas bottle
+ * Form to add a new gas bottle (only visible when authenticated)
  */
 
 'use client';
 
 import React, { useState } from 'react';
+import { useSession } from 'next-auth/react';
 import {
   Box,
   Button,
@@ -22,12 +23,18 @@ interface GasBottleFormProps {
 }
 
 export function GasBottleForm({ onBottleAdded, hasActiveBottle }: GasBottleFormProps) {
+  const { data: session } = useSession();
   const [startDate, setStartDate] = useState(
     new Date().toISOString().split('T')[0]
   );
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Don't render if not authenticated
+  if (!session) {
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

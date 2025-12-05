@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
 import OpenAI from 'openai';
 import type { ProcessedWeatherData } from '@/types/weather';
+import { requireAuth } from '@/lib/auth-utils';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const BLOB_READ_WRITE_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
@@ -60,6 +61,15 @@ function prepareWeatherDataForAI(weatherData: ProcessedWeatherData) {
 }
 
 export async function GET(request: Request) {
+  // Check if this is a cron job call (has special header) or manual call
+  const isCronJob = request.headers.get('x-cron-secret') === process.env.CRON_SECRET;
+
+  // Require authentication for manual calls (not cron jobs)
+  if (!isCronJob) {
+    const authError = await requireAuth();
+    if (authError) return authError;
+  }
+
   try {
     console.log('[GenerateForecast] Starting forecast generation...');
 

@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useSession } from 'next-auth/react';
 import {
   Box,
   Paper,
@@ -58,6 +59,8 @@ function formatDate(dateString: string): string {
 }
 
 export function GasBottleList({ bottles, onBottleUpdated }: GasBottleListProps) {
+  const { data: session } = useSession();
+  const isAuthenticated = !!session;
   const [endDialogOpen, setEndDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedBottle, setSelectedBottle] = useState<GasBottle | null>(null);
@@ -146,17 +149,19 @@ export function GasBottleList({ bottles, onBottleUpdated }: GasBottleListProps) 
                 </Typography>
               )}
             </Box>
-            <Button
-              variant="contained"
-              color="warning"
-              onClick={() => {
-                setSelectedBottle(activeBottle);
-                setEndDate(new Date().toISOString().split('T')[0]);
-                setEndDialogOpen(true);
-              }}
-            >
-              Flasche leer
-            </Button>
+            {isAuthenticated && (
+              <Button
+                variant="contained"
+                color="warning"
+                onClick={() => {
+                  setSelectedBottle(activeBottle);
+                  setEndDate(new Date().toISOString().split('T')[0]);
+                  setEndDialogOpen(true);
+                }}
+              >
+                Flasche leer
+              </Button>
+            )}
           </Box>
         </Paper>
       )}
@@ -208,7 +213,7 @@ export function GasBottleList({ bottles, onBottleUpdated }: GasBottleListProps) 
                   <TableCell>Ende</TableCell>
                   <TableCell align="right">Betriebstage</TableCell>
                   <TableCell>Status</TableCell>
-                  <TableCell align="right">Aktionen</TableCell>
+                  {isAuthenticated && <TableCell align="right">Aktionen</TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -238,18 +243,20 @@ export function GasBottleList({ bottles, onBottleUpdated }: GasBottleListProps) 
                         />
                       )}
                     </TableCell>
-                    <TableCell align="right">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => {
-                          setSelectedBottle(bottle);
-                          setDeleteDialogOpen(true);
-                        }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
+                    {isAuthenticated && (
+                      <TableCell align="right">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => {
+                            setSelectedBottle(bottle);
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

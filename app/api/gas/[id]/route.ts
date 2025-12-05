@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import GasBottle from '@/models/gas-bottle';
+import { requireAuth } from '@/lib/auth-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,10 @@ interface RouteParams {
 }
 
 export async function PUT(request: Request, { params }: RouteParams) {
+  // Require authentication for updating bottles
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
     await dbConnect();
 
@@ -55,6 +60,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
+  // Require authentication for deleting bottles
+  const authError = await requireAuth();
+  if (authError) return authError;
+
   try {
     await dbConnect();
 

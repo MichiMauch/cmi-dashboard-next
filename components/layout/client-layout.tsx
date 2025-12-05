@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { ThemeProvider, useThemeMode } from '@/components/providers/theme-provider';
+import { SessionProvider } from '@/components/providers/session-provider';
 import { SidebarLayout } from './sidebar-layout';
 
 interface ClientLayoutProps {
@@ -25,8 +26,10 @@ function LayoutContent({ children }: ClientLayoutProps) {
 
 export function ClientLayout({ children }: ClientLayoutProps) {
   return (
-    <ThemeProvider>
-      <LayoutContent>{children}</LayoutContent>
-    </ThemeProvider>
+    <SessionProvider>
+      <ThemeProvider>
+        <LayoutContent>{children}</LayoutContent>
+      </ThemeProvider>
+    </SessionProvider>
   );
 }
