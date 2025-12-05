@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:shelly-api-docs.shelly.cloud)",
+      "Bash(curl:*)",
+      "Bash(git push)",
+      "WebFetch(domain:vercel.com)",
+      "Bash(npm install)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(ssh:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
