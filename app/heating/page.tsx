@@ -4,17 +4,24 @@
  */
 
 import { getDashboardData } from '@/lib/data';
-import { StatCard } from '@/components/shared/stat-card';
-import { GaugeCard } from '@/components/shared/gauge-card';
-import { DataTable, DataTableColumn } from '@/components/shared/data-table';
-import { ChartCard } from '@/components/shared/chart-card';
-import { Container, Typography, Box, Chip, Stack } from '@mui/material';
-import { BarChart } from '@mui/x-charts/BarChart';
-import { format } from 'date-fns';
-import { de } from 'date-fns/locale';
+import {
+  Typography,
+  Box,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+} from '@mui/material';
+import ThermostatIcon from '@mui/icons-material/Thermostat';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
+import { BarChart } from '@mui/x-charts/BarChart';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
 
 export const revalidate = 300; // Revalidate every 5 minutes
 
@@ -33,12 +40,6 @@ const MONTH_NAMES: Record<string, string> = {
   '12': 'Dezember',
 };
 
-const STATE_CONFIG = {
-  cold: { label: '❄️ KALT', color: 'info' as const },
-  warming: { label: '📈 AUFWÄRMEN', color: 'warning' as const },
-  hot: { label: '🔥 HEISS', color: 'error' as const },
-  cooling: { label: '📉 ABKÜHLEN', color: 'success' as const },
-};
 
 export default async function HeatingPage() {
   const data = await getDashboardData();
@@ -67,12 +68,6 @@ export default async function HeatingPage() {
     event_type: event.event_type === 'fire_started' ? 'Gestartet' : event.event_type,
   }));
 
-  const fireEventsColumns: DataTableColumn[] = [
-    { id: 'timestamp', label: 'Zeitpunkt' },
-    { id: 'temperature', label: 'Temperatur' },
-    { id: 'event_type', label: 'Typ' },
-  ];
-
   // Prepare monthly stats table data (format on server)
   const monthlyStatsRows = data.monthly_stats.map((stat) => {
     const [year, month] = stat.month.split('-');
@@ -84,51 +79,8 @@ export default async function HeatingPage() {
     };
   });
 
-  const monthlyStatsColumns: DataTableColumn[] = [
-    { id: 'month', label: 'Monat' },
-    { id: 'count', label: 'Anzahl' },
-    { id: 'avg_temp', label: 'Ø Temp' },
-    { id: 'max_temp', label: 'Max Temp' },
-  ];
-
-  const stateConfig = STATE_CONFIG[data.oven_state.state];
-
   return (
-    <Container maxWidth="xl">
-      <Box sx={{ my: 4 }}>
-        {/* Header */}
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Typography
-            variant="h3"
-            component="h1"
-            gutterBottom
-            sx={{
-              background: 'linear-gradient(to right, #f97316, #dc2626)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              fontWeight: 700,
-            }}
-          >
-            🔥 KOKOMO Heating Dashboard
-          </Typography>
-          <Typography variant="body1" color="text.secondary" gutterBottom>
-            Live-Daten aus der CMI JSON API
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Letztes Update: {format(new Date(data.last_updated), 'dd.MM.yyyy - HH:mm', { locale: de })}
-          </Typography>
-        </Box>
-
-        {/* Oven Status */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              Ofen Status:
-            </Typography>
-            <Chip label={stateConfig.label} color={stateConfig.color} />
-          </Box>
-        </Box>
+    <Box>
 
         {/* Key Metrics */}
         <Box
@@ -139,34 +91,80 @@ export default async function HeatingPage() {
             mb: 4,
           }}
         >
-          <StatCard
-            title="Gesamt Feuer-Events"
-            value={totalEvents}
-            icon={<LocalFireDepartmentIcon />}
-            color="error"
-          />
-          <StatCard
-            title="Dieser Monat"
-            value={currentMonthStats?.count ?? 0}
-            icon={<CalendarMonthIcon />}
-            color="warning"
-          />
-          <StatCard
-            title="Ø pro Monat"
-            value={
-              data.monthly_stats.length > 0
-                ? (
-                    data.monthly_stats.reduce((sum, stat) => sum + stat.count, 0) /
-                    data.monthly_stats.length
-                  ).toFixed(1)
-                : '0'
-            }
-            icon={<ShowChartIcon />}
-            color="info"
-          />
+          <Paper
+            elevation={3}
+            sx={{
+              p: { xs: 2, sm: 3, md: 4 },
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: { xs: 2, sm: 3 },
+              background:
+                'linear-gradient(135deg, rgba(66, 165, 245, 0.1) 0%, rgba(66, 165, 245, 0.05) 100%)',
+            }}
+          >
+            <LocalFireDepartmentIcon sx={{ fontSize: { xs: 40, sm: 48, md: 64 }, color: 'error.main' }} />
+            <Box>
+              <Typography sx={{ fontWeight: 700, lineHeight: 1, fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
+                {totalEvents}
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Gesamt Feuer-Events
+              </Typography>
+            </Box>
+          </Paper>
+          <Paper
+            elevation={3}
+            sx={{
+              p: { xs: 2, sm: 3, md: 4 },
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: { xs: 2, sm: 3 },
+              background:
+                'linear-gradient(135deg, rgba(66, 165, 245, 0.1) 0%, rgba(66, 165, 245, 0.05) 100%)',
+            }}
+          >
+            <CalendarMonthIcon sx={{ fontSize: { xs: 40, sm: 48, md: 64 }, color: 'warning.main' }} />
+            <Box>
+              <Typography sx={{ fontWeight: 700, lineHeight: 1, fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
+                {currentMonthStats?.count ?? 0}
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Dieser Monat
+              </Typography>
+            </Box>
+          </Paper>
+          <Paper
+            elevation={3}
+            sx={{
+              p: { xs: 2, sm: 3, md: 4 },
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: { xs: 2, sm: 3 },
+              background:
+                'linear-gradient(135deg, rgba(66, 165, 245, 0.1) 0%, rgba(66, 165, 245, 0.05) 100%)',
+            }}
+          >
+            <ShowChartIcon sx={{ fontSize: { xs: 40, sm: 48, md: 64 }, color: 'info.main' }} />
+            <Box>
+              <Typography sx={{ fontWeight: 700, lineHeight: 1, fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
+                {data.monthly_stats.length > 0
+                  ? (
+                      data.monthly_stats.reduce((sum, stat) => sum + stat.count, 0) /
+                      data.monthly_stats.length
+                    ).toFixed(1)
+                  : '0'}
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Ø pro Monat
+              </Typography>
+            </Box>
+          </Paper>
         </Box>
 
-        {/* Temperature Gauges */}
+        {/* Temperature Cards */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
             🌡️ Temperaturen
@@ -181,24 +179,34 @@ export default async function HeatingPage() {
             {data.current_temps
               .filter((temp) => temp.nummer >= 1 && temp.nummer <= 6)
               .sort((a, b) => a.nummer - b.nummer)
-              .map((temp) => {
-                const isOven = temp.nummer === 4;
-                const maxTemp = isOven ? 200 : 100;
-                return (
-                  <GaugeCard
-                    key={temp.nummer}
-                    title={temp.ort || `Sensor ${temp.nummer}`}
-                    value={parseFloat(temp.wert.toFixed(1))}
-                    maxValue={maxTemp}
-                    unit="°C"
-                    thresholds={
-                      isOven
-                        ? { low: 40, medium: 60, high: 100 }
-                        : { low: 20, medium: 40, high: 60 }
-                    }
-                  />
-                );
-              })}
+              .map((temp) => (
+                <Paper
+                  key={temp.nummer}
+                  elevation={3}
+                  sx={{
+                    p: { xs: 2, sm: 3, md: 4 },
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    alignItems: { xs: 'flex-start', sm: 'center' },
+                    gap: { xs: 2, sm: 3 },
+                    background:
+                      'linear-gradient(135deg, rgba(239, 83, 80, 0.1) 0%, rgba(239, 83, 80, 0.05) 100%)',
+                  }}
+                >
+                  <ThermostatIcon sx={{ fontSize: { xs: 40, sm: 48, md: 64 }, color: 'error.main' }} />
+                  <Box>
+                    <Typography sx={{ fontWeight: 700, lineHeight: 1, fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
+                      {temp.wert.toFixed(1)}
+                      <Typography component="span" sx={{ ml: 0.5, fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }}>
+                        °C
+                      </Typography>
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary">
+                      {temp.ort || `Sensor ${temp.nummer}`}
+                    </Typography>
+                  </Box>
+                </Paper>
+              ))}
           </Box>
         </Box>
 
@@ -209,18 +217,54 @@ export default async function HeatingPage() {
           </Typography>
 
           {/* Recent Fire Events Table */}
-          <Box sx={{ mb: 3 }}>
-            <DataTable
-              title="🕒 Letzte Feuer-Events"
-              columns={fireEventsColumns}
-              rows={fireEventsRows}
-              maxHeight={400}
-            />
-          </Box>
+          <Paper
+            elevation={3}
+            sx={{
+              p: { xs: 2, sm: 3, md: 4 },
+              mb: 3,
+              background:
+                'linear-gradient(135deg, rgba(102, 187, 106, 0.1) 0%, rgba(102, 187, 106, 0.05) 100%)',
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              🕒 Letzte Feuer-Events
+            </Typography>
+            <TableContainer sx={{ maxHeight: 400 }}>
+              <Table stickyHeader size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>Zeitpunkt</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Temperatur</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Typ</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {fireEventsRows.map((row, index) => (
+                    <TableRow key={index} hover>
+                      <TableCell>{row.timestamp}</TableCell>
+                      <TableCell>{row.temperature}</TableCell>
+                      <TableCell>{row.event_type}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
 
           {/* Monthly Bar Chart */}
-          <Box sx={{ mb: 3 }}>
-            <ChartCard title="📊 Feuer-Events pro Monat" height={300}>
+          <Paper
+            elevation={3}
+            sx={{
+              p: { xs: 2, sm: 3, md: 4 },
+              mb: 3,
+              background:
+                'linear-gradient(135deg, rgba(255, 167, 38, 0.1) 0%, rgba(255, 167, 38, 0.05) 100%)',
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              📊 Feuer-Events pro Monat
+            </Typography>
+            <Box sx={{ height: 300, width: '100%' }}>
               {chartData.length > 0 ? (
                 <BarChart
                   dataset={chartData}
@@ -245,16 +289,44 @@ export default async function HeatingPage() {
                   <Typography color="text.secondary">Noch keine Statistiken verfügbar</Typography>
                 </Box>
               )}
-            </ChartCard>
-          </Box>
+            </Box>
+          </Paper>
 
           {/* Monthly Stats Table */}
-          <DataTable
-            title="📅 Monatliche Übersicht"
-            columns={monthlyStatsColumns}
-            rows={monthlyStatsRows}
-            maxHeight={400}
-          />
+          <Paper
+            elevation={3}
+            sx={{
+              p: { xs: 2, sm: 3, md: 4 },
+              background:
+                'linear-gradient(135deg, rgba(102, 187, 106, 0.1) 0%, rgba(102, 187, 106, 0.05) 100%)',
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              📅 Monatliche Übersicht
+            </Typography>
+            <TableContainer sx={{ maxHeight: 400 }}>
+              <Table stickyHeader size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>Monat</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Anzahl</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Ø Temp</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Max Temp</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {monthlyStatsRows.map((row, index) => (
+                    <TableRow key={index} hover>
+                      <TableCell>{row.month}</TableCell>
+                      <TableCell>{row.count}</TableCell>
+                      <TableCell>{row.avg_temp}</TableCell>
+                      <TableCell>{row.max_temp}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
         </Box>
 
         {/* Footer */}
@@ -263,7 +335,6 @@ export default async function HeatingPage() {
             Daten werden stündlich vom Raspberry Pi aktualisiert
           </Typography>
         </Box>
-      </Box>
-    </Container>
+    </Box>
   );
 }

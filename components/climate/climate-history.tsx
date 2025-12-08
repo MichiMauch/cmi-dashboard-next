@@ -78,7 +78,10 @@ export function ClimateHistory({ deviceId, roomName }: ClimateHistoryProps) {
         // Nur Uhrzeit für Tagesansicht
         label = date.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
       } else if (period === 'week') {
-        label = date.toLocaleDateString('de-CH', { weekday: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        // Format: "05.12 12:02"
+        const dateStr = date.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit' });
+        const timeStr = date.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+        label = `${dateStr} ${timeStr}`;
       } else {
         label = date.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit' });
       }
@@ -107,10 +110,6 @@ export function ClimateHistory({ deviceId, roomName }: ClimateHistoryProps) {
     };
   });
 
-  const xLabels = chartData.map((d) => d.label);
-  const temperatureData = chartData.map((d) => d.temperature);
-  const humidityData = chartData.map((d) => d.humidity);
-
   const periodLabels: Record<Period, string> = {
     day: 'Letzte 24 Stunden',
     week: 'Letzte 7 Tage',
@@ -118,6 +117,7 @@ export function ClimateHistory({ deviceId, roomName }: ClimateHistoryProps) {
     year: 'Letztes Jahr',
   };
 
+  // Safety check: ensure we have valid data for charts
   if (data.length === 0 && !loading) {
     return (
       <Paper elevation={2} sx={{ p: 3, mt: 4 }}>
@@ -159,74 +159,52 @@ export function ClimateHistory({ deviceId, roomName }: ClimateHistoryProps) {
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {/* Temperature Chart */}
-          <Box>
+          <Box sx={{ width: '100%', height: 300 }}>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               Temperatur (°C) - {periodLabels[period]}
             </Typography>
             <LineChart
-              height={250}
-              series={[
-                {
-                  data: temperatureData,
-                  label: 'Temperatur',
-                  color: '#ef5350',
-                  showMark: (period === 'day' || period === 'week') && data.length < 50,
-                },
-              ]}
+              dataset={chartData}
               xAxis={[
                 {
-                  data: xLabels,
-                  scaleType: 'point',
-                  tickLabelStyle: {
-                    angle: -45,
-                    textAnchor: 'end',
-                    fontSize: 10,
-                  },
+                  scaleType: 'band',
+                  dataKey: 'label',
                 },
               ]}
-              yAxis={[
+              series={[
                 {
-                  min: Math.min(...temperatureData) - 2,
-                  max: Math.max(...temperatureData) + 2,
+                  dataKey: 'temperature',
+                  label: 'Temperatur',
+                  color: '#ef5350',
+                  showMark: chartData.length < 50,
                 },
               ]}
-              margin={{ left: 50, right: 20, top: 20, bottom: 50 }}
+              height={250}
             />
           </Box>
 
           {/* Humidity Chart */}
-          <Box>
+          <Box sx={{ width: '100%', height: 300 }}>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               Luftfeuchtigkeit (%) - {periodLabels[period]}
             </Typography>
             <LineChart
-              height={250}
-              series={[
-                {
-                  data: humidityData,
-                  label: 'Luftfeuchtigkeit',
-                  color: '#42a5f5',
-                  showMark: (period === 'day' || period === 'week') && data.length < 50,
-                },
-              ]}
+              dataset={chartData}
               xAxis={[
                 {
-                  data: xLabels,
-                  scaleType: 'point',
-                  tickLabelStyle: {
-                    angle: -45,
-                    textAnchor: 'end',
-                    fontSize: 10,
-                  },
+                  scaleType: 'band',
+                  dataKey: 'label',
                 },
               ]}
-              yAxis={[
+              series={[
                 {
-                  min: Math.max(0, Math.min(...humidityData) - 5),
-                  max: Math.min(100, Math.max(...humidityData) + 5),
+                  dataKey: 'humidity',
+                  label: 'Luftfeuchtigkeit',
+                  color: '#42a5f5',
+                  showMark: chartData.length < 50,
                 },
               ]}
-              margin={{ left: 50, right: 20, top: 20, bottom: 50 }}
+              height={250}
             />
           </Box>
         </Box>

@@ -45,8 +45,27 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
 import Image from 'next/image';
+import { HeatingStatusChip } from './heating-status-chip';
+import { SolarStatusChip } from './solar-status-chip';
 
 const DRAWER_WIDTH = 240;
+
+// Page title mapping based on pathname
+const pageTitles: Record<string, string> = {
+  '/': 'Dashboard',
+  '/climate': 'Klima inHouse',
+  '/climate/kueche': 'Küche',
+  '/climate/bad': 'Bad',
+  '/climate/buero': 'Büro',
+  '/climate/schlafen': 'Schlafen',
+  '/climate/aussen': 'Aussen',
+  '/heating': 'Heizung',
+  '/solar': 'Strom',
+  '/wasser': 'Wasser',
+  '/gas': 'Gas',
+  '/weather': 'Wetter',
+  '/login': 'Login',
+};
 
 interface NavigationItem {
   text: string;
@@ -91,6 +110,9 @@ export function SidebarLayout({ children, mode, onToggleMode }: SidebarLayoutPro
   const router = useRouter();
   const { data: session } = useSession();
   const isAuthenticated = !!session;
+
+  // Get page title from pathname
+  const pageTitle = pageTitles[pathname] || 'Dashboard';
 
   // Auto-expand climate menu if on a climate subpage
   React.useEffect(() => {
@@ -146,8 +168,10 @@ export function SidebarLayout({ children, mode, onToggleMode }: SidebarLayoutPro
               style={{ objectFit: 'contain' }}
             />
             <Typography variant="h6" noWrap component="div">
-              Dashboard
+              {pageTitle}
             </Typography>
+            {pathname === '/heating' && <HeatingStatusChip />}
+            {pathname === '/solar' && <SolarStatusChip />}
           </Box>
           <IconButton color="inherit" onClick={onToggleMode}>
             {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
@@ -241,7 +265,7 @@ export function SidebarLayout({ children, mode, onToggleMode }: SidebarLayoutPro
                             key={child.text}
                             selected={pathname === child.path}
                             onClick={() => handleNavigation(child.path)}
-                            sx={{ pl: 4 }}
+                            sx={{ pl: 4, bgcolor: 'action.hover' }}
                           >
                             <ListItemIcon sx={{ minWidth: 40 }}>{child.icon}</ListItemIcon>
                             <ListItemText primary={child.text} />
@@ -274,6 +298,8 @@ export function SidebarLayout({ children, mode, onToggleMode }: SidebarLayoutPro
         sx={{
           flexGrow: 1,
           p: 3,
+          overflow: 'hidden',
+          minWidth: 0,
           transition: theme.transitions.create('margin', {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,

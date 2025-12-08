@@ -3,7 +3,7 @@
  * Displays current weather and forecast for Muhen
  */
 
-import { Container, Typography, Box, Card, CardContent } from '@mui/material';
+import { Typography, Box, Card, CardContent } from '@mui/material';
 import { StatCard } from '@/components/shared/stat-card';
 import { MetricCard } from '@/components/shared/metric-card';
 import { ChartCard } from '@/components/shared/chart-card';
@@ -63,46 +63,44 @@ export default async function WeatherPage() {
     const errorMessage = weatherData && 'error' in weatherData ? weatherData.error : 'Unbekannter Fehler';
 
     return (
-      <Container maxWidth="md">
-        <Box sx={{ my: 8, textAlign: 'center' }}>
-          <Typography variant="h4" gutterBottom>
-            ⚠️ Wetterdaten nicht verfügbar
-          </Typography>
-          <Typography color="text.secondary" paragraph>
-            Die Wetterdaten konnten nicht geladen werden.
-          </Typography>
-          <Box
-            sx={{
-              mt: 2,
-              p: 2,
-              bgcolor: 'error.main',
-              color: 'error.contrastText',
-              borderRadius: 1,
-              fontFamily: 'monospace',
-              fontSize: '0.875rem',
-            }}
-          >
-            Fehler: {errorMessage}
-          </Box>
-          <Box
-            sx={{
-              mt: 2,
-              p: 2,
-              bgcolor: 'warning.main',
-              color: 'warning.contrastText',
-              borderRadius: 1,
-              fontSize: '0.875rem',
-            }}
-          >
-            <strong>Mögliche Ursachen:</strong>
-            <ul style={{ textAlign: 'left', marginTop: 8 }}>
-              <li>OPENWEATHER_API_KEY nicht gesetzt oder ungültig</li>
-              <li>API Rate Limit erreicht (60 calls/min im Free Plan)</li>
-              <li>Nach Setzen der Variable: Redeploy erforderlich</li>
-            </ul>
-          </Box>
+      <Box sx={{ textAlign: 'center', py: 8 }}>
+        <Typography variant="h4" gutterBottom>
+          ⚠️ Wetterdaten nicht verfügbar
+        </Typography>
+        <Typography color="text.secondary" paragraph>
+          Die Wetterdaten konnten nicht geladen werden.
+        </Typography>
+        <Box
+          sx={{
+            mt: 2,
+            p: 2,
+            bgcolor: 'error.main',
+            color: 'error.contrastText',
+            borderRadius: 1,
+            fontFamily: 'monospace',
+            fontSize: '0.875rem',
+          }}
+        >
+          Fehler: {errorMessage}
         </Box>
-      </Container>
+        <Box
+          sx={{
+            mt: 2,
+            p: 2,
+            bgcolor: 'warning.main',
+            color: 'warning.contrastText',
+            borderRadius: 1,
+            fontSize: '0.875rem',
+          }}
+        >
+          <strong>Mögliche Ursachen:</strong>
+          <ul style={{ textAlign: 'left', marginTop: 8 }}>
+            <li>OPENWEATHER_API_KEY nicht gesetzt oder ungültig</li>
+            <li>API Rate Limit erreicht (60 calls/min im Free Plan)</li>
+            <li>Nach Setzen der Variable: Redeploy erforderlich</li>
+          </ul>
+        </Box>
+      </Box>
     );
   }
 
@@ -115,32 +113,16 @@ export default async function WeatherPage() {
   }));
 
   return (
-    <Container maxWidth="xl">
-      <Box sx={{ my: 4 }}>
-        {/* Header */}
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Typography
-            variant="h3"
-            component="h1"
-            gutterBottom
-            sx={{
-              background: 'linear-gradient(to right, #3b82f6, #06b6d4)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              fontWeight: 700,
-            }}
-          >
-            🌤️ Wetter in {location.name}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Letztes Update: {new Date(weatherData.timestamp).toLocaleString('de-DE')}
-          </Typography>
-        </Box>
-
+    <Box>
         {/* Current Weather Hero Card */}
-        <Card elevation={3} sx={{ mb: 4 }}>
-          <CardContent>
+        <Card
+          elevation={3}
+          sx={{
+            mb: 4,
+            background: 'linear-gradient(135deg, rgba(66, 165, 245, 0.1) 0%, rgba(66, 165, 245, 0.05) 100%)',
+          }}
+        >
+          <CardContent sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
             <Box
               sx={{
                 display: 'flex',
@@ -158,7 +140,10 @@ export default async function WeatherPage() {
                   sx={{ width: 100, height: 100 }}
                 />
                 <Box>
-                  <Typography variant="h2" component="div" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                  <Typography
+                    component="div"
+                    sx={{ fontWeight: 700, color: 'primary.main', fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' } }}
+                  >
                     {current.temp}°C
                   </Typography>
                   <Typography variant="body1" color="text.secondary">
@@ -277,8 +262,14 @@ export default async function WeatherPage() {
             }}
           >
             {daily.map((day, index) => (
-              <Card key={index} elevation={2}>
-                <CardContent>
+              <Card
+                key={index}
+                elevation={3}
+                sx={{
+                  background: 'linear-gradient(135deg, rgba(102, 187, 106, 0.1) 0%, rgba(102, 187, 106, 0.05) 100%)',
+                }}
+              >
+                <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
                   <Typography variant="body2" color="text.secondary" align="center" gutterBottom>
                     {day.dayName}
                   </Typography>
@@ -327,7 +318,6 @@ export default async function WeatherPage() {
             ))}
           </Box>
         </Box>
-      </Box>
-    </Container>
+    </Box>
   );
 }

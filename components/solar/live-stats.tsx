@@ -6,10 +6,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Box, CircularProgress, Alert } from '@mui/material';
-import { StatCard } from '@/components/shared/stat-card';
-import { MetricCard } from '@/components/shared/metric-card';
-import { GaugeCard } from '@/components/shared/gauge-card';
+import { Box, CircularProgress, Alert, Paper, Typography } from '@mui/material';
 import BoltIcon from '@mui/icons-material/Bolt';
 import BatteryChargingFullIcon from '@mui/icons-material/BatteryChargingFull';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';
@@ -110,30 +107,106 @@ export function LiveStats({ initialData, todayPeak, autarkieStats }: LiveStatsPr
           mb: 4,
         }}
       >
-        <StatCard
-          title="Aktuelle Leistung"
-          value={`${data.currentPower.toFixed(0)} W`}
-          icon={<BoltIcon />}
-          color="warning"
-        />
-        <StatCard
-          title="Batterieladung"
-          value={`${data.batteryCharge.toFixed(1)} %`}
-          icon={<BatteryChargingFullIcon />}
-          color="success"
-        />
-        <StatCard
-          title="Heutiger Ertrag"
-          value={`${data.todayYield.toFixed(2)} kWh`}
-          icon={<WbSunnyIcon />}
-          color="warning"
-        />
-        <StatCard
-          title="Verbrauch Heute"
-          value={`${data.todayConsumption.toFixed(2)} kWh`}
-          icon={<FlashOnIcon />}
-          color="info"
-        />
+        <Paper
+          elevation={3}
+          sx={{
+            p: { xs: 2, sm: 3, md: 4 },
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            gap: { xs: 2, sm: 3 },
+            background:
+              'linear-gradient(135deg, rgba(66, 165, 245, 0.1) 0%, rgba(66, 165, 245, 0.05) 100%)',
+          }}
+        >
+          <BoltIcon sx={{ fontSize: { xs: 40, sm: 48, md: 64 }, color: 'warning.main' }} />
+          <Box>
+            <Typography sx={{ fontWeight: 700, lineHeight: 1, fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
+              {data.currentPower.toFixed(0)}
+              <Typography component="span" sx={{ ml: 0.5, fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }}>
+                W
+              </Typography>
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Aktuelle Leistung
+            </Typography>
+          </Box>
+        </Paper>
+        <Paper
+          elevation={3}
+          sx={{
+            p: { xs: 2, sm: 3, md: 4 },
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            gap: { xs: 2, sm: 3 },
+            background:
+              'linear-gradient(135deg, rgba(102, 187, 106, 0.1) 0%, rgba(102, 187, 106, 0.05) 100%)',
+          }}
+        >
+          <BatteryChargingFullIcon sx={{ fontSize: { xs: 40, sm: 48, md: 64 }, color: 'success.main' }} />
+          <Box>
+            <Typography sx={{ fontWeight: 700, lineHeight: 1, fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
+              {data.batteryCharge.toFixed(1)}
+              <Typography component="span" sx={{ ml: 0.5, fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }}>
+                %
+              </Typography>
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Batterieladung
+            </Typography>
+          </Box>
+        </Paper>
+        <Paper
+          elevation={3}
+          sx={{
+            p: { xs: 2, sm: 3, md: 4 },
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            gap: { xs: 2, sm: 3 },
+            background:
+              'linear-gradient(135deg, rgba(255, 167, 38, 0.1) 0%, rgba(255, 167, 38, 0.05) 100%)',
+          }}
+        >
+          <WbSunnyIcon sx={{ fontSize: { xs: 40, sm: 48, md: 64 }, color: 'warning.main' }} />
+          <Box>
+            <Typography sx={{ fontWeight: 700, lineHeight: 1, fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
+              {data.todayYield.toFixed(2)}
+              <Typography component="span" sx={{ ml: 0.5, fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }}>
+                kWh
+              </Typography>
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Heutiger Ertrag
+            </Typography>
+          </Box>
+        </Paper>
+        <Paper
+          elevation={3}
+          sx={{
+            p: { xs: 2, sm: 3, md: 4 },
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            gap: { xs: 2, sm: 3 },
+            background:
+              'linear-gradient(135deg, rgba(66, 165, 245, 0.1) 0%, rgba(66, 165, 245, 0.05) 100%)',
+          }}
+        >
+          <FlashOnIcon sx={{ fontSize: { xs: 40, sm: 48, md: 64 }, color: 'info.main' }} />
+          <Box>
+            <Typography sx={{ fontWeight: 700, lineHeight: 1, fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
+              {data.todayConsumption.toFixed(2)}
+              <Typography component="span" sx={{ ml: 0.5, fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }}>
+                kWh
+              </Typography>
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Verbrauch Heute
+            </Typography>
+          </Box>
+        </Paper>
       </Box>
 
       {/* Battery Gauge and Autarkie */}
@@ -145,22 +218,61 @@ export function LiveStats({ initialData, todayPeak, autarkieStats }: LiveStatsPr
           mb: 4,
         }}
       >
-        <GaugeCard
-          title="Batterieladung"
-          value={data.batteryCharge}
-          maxValue={100}
-          unit="%"
-          thresholds={{ low: 20, medium: 50, high: 100 }}
-        />
+        <Paper
+          elevation={3}
+          sx={{
+            p: { xs: 2, sm: 3, md: 4 },
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background:
+              'linear-gradient(135deg, rgba(102, 187, 106, 0.1) 0%, rgba(102, 187, 106, 0.05) 100%)',
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+            Batterieladung
+          </Typography>
+          <Typography
+            sx={{
+              fontWeight: 700,
+              lineHeight: 1,
+              fontSize: { xs: '2.5rem', sm: '3rem', md: '4rem' },
+              color: data.batteryCharge < 20 ? 'error.main' : data.batteryCharge < 50 ? 'warning.main' : 'success.main',
+            }}
+          >
+            {data.batteryCharge.toFixed(1)}%
+          </Typography>
+        </Paper>
         {autarkieStats && (
-          <MetricCard
-            title="Autarkie"
-            value={autarkieStats.autarkie.toFixed(1)}
-            unit="%"
-            icon={<CheckCircleIcon />}
-            color="success"
-            subtitle={`${autarkieStats.total_solar_yield.toFixed(0)} kWh Solar / ${autarkieStats.total_consumption.toFixed(0)} kWh Verbrauch`}
-          />
+          <Paper
+            elevation={3}
+            sx={{
+              p: { xs: 2, sm: 3, md: 4 },
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: { xs: 2, sm: 3 },
+              background:
+                'linear-gradient(135deg, rgba(102, 187, 106, 0.1) 0%, rgba(102, 187, 106, 0.05) 100%)',
+            }}
+          >
+            <CheckCircleIcon sx={{ fontSize: { xs: 40, sm: 48, md: 64 }, color: 'success.main' }} />
+            <Box>
+              <Typography sx={{ fontWeight: 700, lineHeight: 1, fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
+                {autarkieStats.autarkie.toFixed(1)}
+                <Typography component="span" sx={{ ml: 0.5, fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }}>
+                  %
+                </Typography>
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Autarkie
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {autarkieStats.total_solar_yield.toFixed(0)} kWh Solar / {autarkieStats.total_consumption.toFixed(0)} kWh Verbrauch
+              </Typography>
+            </Box>
+          </Paper>
         )}
       </Box>
     </>

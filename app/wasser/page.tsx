@@ -3,11 +3,19 @@
  * Displays water usage statistics and comparison to Swiss average
  */
 
-import { Container, Typography, Box, Card, CardContent, Link as MuiLink, Alert } from '@mui/material';
-import { StatCard } from '@/components/shared/stat-card';
-import { ChartCard } from '@/components/shared/chart-card';
-import { DataTable, DataTableColumn } from '@/components/shared/data-table';
-import { GaugeCard } from '@/components/shared/gauge-card';
+import {
+  Typography,
+  Box,
+  Link as MuiLink,
+  Alert,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+} from '@mui/material';
 import { YearlyConsumptionChart } from '@/components/water/yearly-consumption-chart';
 import { PerCapitaComparison } from '@/components/water/per-capita-comparison';
 import WaterDropIcon from '@mui/icons-material/WaterDrop';
@@ -30,13 +38,11 @@ export default function WaterPage() {
 
   if (!currentStats) {
     return (
-      <Container maxWidth="md">
-        <Box sx={{ my: 8, textAlign: 'center' }}>
-          <Typography variant="h4" gutterBottom>
-            ⚠️ Keine vollständigen Daten verfügbar
-          </Typography>
-        </Box>
-      </Container>
+      <Box sx={{ textAlign: 'center', py: 8 }}>
+        <Typography variant="h4" gutterBottom>
+          ⚠️ Keine vollständigen Daten verfügbar
+        </Typography>
+      </Box>
     );
   }
 
@@ -58,38 +64,8 @@ export default function WaterPage() {
     };
   }).reverse(); // Newest first
 
-  const tableColumns: DataTableColumn[] = [
-    { id: 'year', label: 'Jahr' },
-    { id: 'total', label: 'Total', align: 'right' },
-    { id: 'perPerson', label: 'Pro Person/Tag', align: 'right' },
-    { id: 'comparison', label: 'vs. CH-Ø', align: 'right' },
-    { id: 'status', label: 'Status' },
-  ];
-
   return (
-    <Container maxWidth="xl">
-      <Box sx={{ my: 4 }}>
-        {/* Header */}
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Typography
-            variant="h3"
-            component="h1"
-            gutterBottom
-            sx={{
-              background: 'linear-gradient(to right, #0ea5e9, #06b6d4)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              fontWeight: 700,
-            }}
-          >
-            💧 Wasserverbrauch
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Unser Verbrauch im Vergleich zum Schweizer Durchschnitt
-          </Typography>
-        </Box>
-
+    <Box sx={{ overflowX: 'hidden' }}>
         {/* Key Statistics */}
         <Box
           sx={{
@@ -99,34 +75,106 @@ export default function WaterPage() {
             mb: 4,
           }}
         >
-          <StatCard
-            title="Verbrauch 2024"
-            value={`${currentStats.totalM3} m³`}
-            subtitle="Total für 2 Personen"
-            icon={<WaterDropIcon />}
-            color="info"
-          />
-          <StatCard
-            title="Pro Person & Tag"
-            value={`${currentStats.dailyPerPerson.toFixed(1)} L`}
-            subtitle={`${currentStats.yearlyPerPerson.toFixed(1)} m³ pro Jahr`}
-            icon={<WaterDropIcon />}
-            color="primary"
-          />
-          <StatCard
-            title="Einsparung"
-            value={`${Math.abs(currentStats.comparisonPercent).toFixed(1)}%`}
-            subtitle="unter CH-Durchschnitt"
-            icon={<TrendingDownIcon />}
-            color="success"
-          />
-          <StatCard
-            title="Kostenersparnis"
-            value={`~${currentStats.costSavings.toFixed(0)} CHF`}
-            subtitle="pro Jahr (2 CHF/m³)"
-            icon={<SavingsIcon />}
-            color="warning"
-          />
+          <Paper
+            elevation={3}
+            sx={{
+              p: { xs: 2, sm: 3, md: 4 },
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: { xs: 2, sm: 3 },
+              background:
+                'linear-gradient(135deg, rgba(66, 165, 245, 0.1) 0%, rgba(66, 165, 245, 0.05) 100%)',
+            }}
+          >
+            <WaterDropIcon sx={{ fontSize: { xs: 40, sm: 48, md: 64 }, color: 'info.main' }} />
+            <Box>
+              <Typography sx={{ fontWeight: 700, lineHeight: 1, fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
+                {currentStats.totalM3}
+                <Typography component="span" sx={{ ml: 0.5, fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }}>
+                  m³
+                </Typography>
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Verbrauch 2024
+              </Typography>
+            </Box>
+          </Paper>
+          <Paper
+            elevation={3}
+            sx={{
+              p: { xs: 2, sm: 3, md: 4 },
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: { xs: 2, sm: 3 },
+              background:
+                'linear-gradient(135deg, rgba(66, 165, 245, 0.1) 0%, rgba(66, 165, 245, 0.05) 100%)',
+            }}
+          >
+            <WaterDropIcon sx={{ fontSize: { xs: 40, sm: 48, md: 64 }, color: 'primary.main' }} />
+            <Box>
+              <Typography sx={{ fontWeight: 700, lineHeight: 1, fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
+                {currentStats.dailyPerPerson.toFixed(1)}
+                <Typography component="span" sx={{ ml: 0.5, fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }}>
+                  L/Tag
+                </Typography>
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Pro Person & Tag
+              </Typography>
+            </Box>
+          </Paper>
+          <Paper
+            elevation={3}
+            sx={{
+              p: { xs: 2, sm: 3, md: 4 },
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: { xs: 2, sm: 3 },
+              background:
+                'linear-gradient(135deg, rgba(102, 187, 106, 0.1) 0%, rgba(102, 187, 106, 0.05) 100%)',
+            }}
+          >
+            <TrendingDownIcon sx={{ fontSize: { xs: 40, sm: 48, md: 64 }, color: 'success.main' }} />
+            <Box>
+              <Typography sx={{ fontWeight: 700, lineHeight: 1, fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
+                {Math.abs(currentStats.comparisonPercent).toFixed(1)}
+                <Typography component="span" sx={{ ml: 0.5, fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }}>
+                  %
+                </Typography>
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Einsparung vs. CH-Ø
+              </Typography>
+            </Box>
+          </Paper>
+          <Paper
+            elevation={3}
+            sx={{
+              p: { xs: 2, sm: 3, md: 4 },
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: { xs: 2, sm: 3 },
+              background:
+                'linear-gradient(135deg, rgba(255, 167, 38, 0.1) 0%, rgba(255, 167, 38, 0.05) 100%)',
+            }}
+          >
+            <SavingsIcon sx={{ fontSize: { xs: 40, sm: 48, md: 64 }, color: 'warning.main' }} />
+            <Box>
+              <Typography sx={{ fontWeight: 700, lineHeight: 1, fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
+                ~{currentStats.costSavings.toFixed(0)}
+                <Typography component="span" sx={{ ml: 0.5, fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }}>
+                  CHF
+                </Typography>
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Kostenersparnis/Jahr
+              </Typography>
+            </Box>
+          </Paper>
         </Box>
 
         {/* Efficiency Champion Badge */}
@@ -138,48 +186,93 @@ export default function WaterPage() {
             mb: 4,
           }}
         >
-          <GaugeCard
-            title="Wasser-Effizienz"
-            value={Math.abs(currentStats.comparisonPercent)}
-            maxValue={100}
-            unit="% Einsparung"
-            thresholds={{ low: 20, medium: 50, high: 100 }}
-          />
-          <Card>
-            <CardContent>
-              <Box sx={{ textAlign: 'center', py: 3 }}>
-                <EmojiEventsIcon sx={{ fontSize: 64, color: 'warning.main', mb: 2 }} />
-                <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
-                  Wasser-Effizienz-Meister!
-                </Typography>
-                <Typography variant="body1" color="text.secondary" paragraph>
-                  Wir verbrauchen nur <strong>{(currentStats.dailyPerPerson / SWISS_AVERAGE_DAILY * 100).toFixed(1)}%</strong> des
-                  Schweizer Durchschnitts
-                </Typography>
-                <Typography variant="body2" color="success.main" sx={{ fontWeight: 600 }}>
-                  Jährliche Einsparung: {currentStats.savingsM3.toFixed(1)} m³ (~{currentStats.costSavings.toFixed(0)} CHF)
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
+          <Paper
+            elevation={3}
+            sx={{
+              p: { xs: 2, sm: 3, md: 4 },
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background:
+                'linear-gradient(135deg, rgba(102, 187, 106, 0.1) 0%, rgba(102, 187, 106, 0.05) 100%)',
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              💧 Wasser-Effizienz
+            </Typography>
+            <Typography sx={{ fontWeight: 700, lineHeight: 1, fontSize: { xs: '2.5rem', sm: '3rem', md: '4rem' }, color: 'success.main' }}>
+              {Math.abs(currentStats.comparisonPercent).toFixed(1)}%
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+              Einsparung vs. CH-Durchschnitt
+            </Typography>
+          </Paper>
+          <Paper
+            elevation={3}
+            sx={{
+              p: { xs: 2, sm: 3, md: 4 },
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background:
+                'linear-gradient(135deg, rgba(255, 167, 38, 0.1) 0%, rgba(255, 167, 38, 0.05) 100%)',
+            }}
+          >
+            <EmojiEventsIcon sx={{ fontSize: { xs: 48, sm: 56, md: 64 }, color: 'warning.main', mb: 2 }} />
+            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+              Wasser-Effizienz-Meister!
+            </Typography>
+            <Typography variant="body1" color="text.secondary" paragraph>
+              Wir verbrauchen nur <strong>{(currentStats.dailyPerPerson / SWISS_AVERAGE_DAILY * 100).toFixed(1)}%</strong> des
+              Schweizer Durchschnitts
+            </Typography>
+            <Typography variant="body2" color="success.main" sx={{ fontWeight: 600 }}>
+              Jährliche Einsparung: {currentStats.savingsM3.toFixed(1)} m³ (~{currentStats.costSavings.toFixed(0)} CHF)
+            </Typography>
+          </Paper>
         </Box>
 
         {/* Yearly Consumption Chart */}
-        <Box sx={{ mb: 4 }}>
-          <ChartCard title="Jährlicher Wasserverbrauch" height={400}>
+        <Paper
+          elevation={3}
+          sx={{
+            p: { xs: 2, sm: 3, md: 4 },
+            mb: 4,
+            background:
+              'linear-gradient(135deg, rgba(255, 167, 38, 0.1) 0%, rgba(255, 167, 38, 0.05) 100%)',
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+            📊 Jährlicher Wasserverbrauch
+          </Typography>
+          <Box sx={{ height: 400, width: '100%' }}>
             <YearlyConsumptionChart data={yearlyConsumption} />
-          </ChartCard>
-        </Box>
+          </Box>
+        </Paper>
 
         {/* Pro-Kopf-Vergleich */}
-        <Box sx={{ mb: 4 }}>
-          <ChartCard title="Pro-Kopf-Vergleich" height={380}>
+        <Paper
+          elevation={3}
+          sx={{
+            p: { xs: 2, sm: 3, md: 4 },
+            mb: 4,
+            background:
+              'linear-gradient(135deg, rgba(255, 167, 38, 0.1) 0%, rgba(255, 167, 38, 0.05) 100%)',
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+            👥 Pro-Kopf-Vergleich
+          </Typography>
+          <Box sx={{ height: 380, width: '100%' }}>
             <PerCapitaComparison
               yourDailyLiters={currentStats.dailyPerPerson}
               averageDailyLiters={SWISS_AVERAGE_DAILY}
             />
-          </ChartCard>
-        </Box>
+          </Box>
+        </Paper>
 
         {/* Key Insights */}
         <Box
@@ -190,73 +283,117 @@ export default function WaterPage() {
             mb: 4,
           }}
         >
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <EmojiEventsIcon color="success" />
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Wichtige Erkenntnisse
+          <Paper
+            elevation={3}
+            sx={{
+              p: { xs: 2, sm: 3, md: 4 },
+              background:
+                'linear-gradient(135deg, rgba(102, 187, 106, 0.1) 0%, rgba(102, 187, 106, 0.05) 100%)',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <EmojiEventsIcon color="success" />
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Wichtige Erkenntnisse
+              </Typography>
+            </Box>
+            <Box component="ul" sx={{ pl: 2, '& li': { mb: 1 } }}>
+              <li>
+                <Typography variant="body2">
+                  <strong>Herausragend effizient:</strong> Nur {(currentStats.dailyPerPerson / SWISS_AVERAGE_DAILY * 100).toFixed(1)}% des Schweizer
+                  Durchschnitts
                 </Typography>
-              </Box>
-              <Box component="ul" sx={{ pl: 2, '& li': { mb: 1 } }}>
-                <li>
-                  <Typography variant="body2">
-                    <strong>Herausragend effizient:</strong> Nur {(currentStats.dailyPerPerson / SWISS_AVERAGE_DAILY * 100).toFixed(1)}% des Schweizer
-                    Durchschnitts
-                  </Typography>
-                </li>
-                <li>
-                  <Typography variant="body2">
-                    <strong>Jährliche Einsparung:</strong> {currentStats.savingsM3.toFixed(1)} m³ für Ihren 2-Personen-Haushalt
-                  </Typography>
-                </li>
-                <li>
-                  <Typography variant="body2">
-                    <strong>Kostenersparnis:</strong> Rund {currentStats.costSavings.toFixed(0)} CHF pro Jahr (bei 2 CHF/m³)
-                  </Typography>
-                </li>
-                <li>
-                  <Typography variant="body2">
-                    <strong>Trend 2023-2024:</strong> Stabil bei ~24-25 m³ pro Jahr
-                  </Typography>
-                </li>
-              </Box>
-            </CardContent>
-          </Card>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Jährliche Einsparung:</strong> {currentStats.savingsM3.toFixed(1)} m³ für Ihren 2-Personen-Haushalt
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Kostenersparnis:</strong> Rund {currentStats.costSavings.toFixed(0)} CHF pro Jahr (bei 2 CHF/m³)
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body2">
+                  <strong>Trend 2023-2024:</strong> Stabil bei ~24-25 m³ pro Jahr
+                </Typography>
+              </li>
+            </Box>
+          </Paper>
 
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <InfoIcon color="info" />
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Wasserspar-Tipps
-                </Typography>
-              </Box>
-              <Box component="ul" sx={{ pl: 2, '& li': { mb: 1 } }}>
-                <li>
-                  <Typography variant="body2">Duschen statt Baden spart bis zu 50% Wasser</Typography>
-                </li>
-                <li>
-                  <Typography variant="body2">Regenwasser für Gartenbewässerung nutzen</Typography>
-                </li>
-                <li>
-                  <Typography variant="body2">Tropfende Wasserhähne sofort reparieren</Typography>
-                </li>
-                <li>
-                  <Typography variant="body2">Wasch- und Geschirrspülmaschine nur voll beladen</Typography>
-                </li>
-                <li>
-                  <Typography variant="body2">Sparduschkopf installieren (6-9 L/Min statt 12-15 L/Min)</Typography>
-                </li>
-              </Box>
-            </CardContent>
-          </Card>
+          <Paper
+            elevation={3}
+            sx={{
+              p: { xs: 2, sm: 3, md: 4 },
+              background:
+                'linear-gradient(135deg, rgba(66, 165, 245, 0.1) 0%, rgba(66, 165, 245, 0.05) 100%)',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <InfoIcon color="info" />
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Wasserspar-Tipps
+              </Typography>
+            </Box>
+            <Box component="ul" sx={{ pl: 2, '& li': { mb: 1 } }}>
+              <li>
+                <Typography variant="body2">Duschen statt Baden spart bis zu 50% Wasser</Typography>
+              </li>
+              <li>
+                <Typography variant="body2">Regenwasser für Gartenbewässerung nutzen</Typography>
+              </li>
+              <li>
+                <Typography variant="body2">Tropfende Wasserhähne sofort reparieren</Typography>
+              </li>
+              <li>
+                <Typography variant="body2">Wasch- und Geschirrspülmaschine nur voll beladen</Typography>
+              </li>
+              <li>
+                <Typography variant="body2">Sparduschkopf installieren (6-9 L/Min statt 12-15 L/Min)</Typography>
+              </li>
+            </Box>
+          </Paper>
         </Box>
 
         {/* Data Table */}
-        <Box sx={{ mb: 4 }}>
-          <DataTable title="Jahresübersicht" columns={tableColumns} rows={tableRows} />
-        </Box>
+        <Paper
+          elevation={3}
+          sx={{
+            p: { xs: 2, sm: 3, md: 4 },
+            mb: 4,
+            background:
+              'linear-gradient(135deg, rgba(102, 187, 106, 0.1) 0%, rgba(102, 187, 106, 0.05) 100%)',
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+            📅 Jahresübersicht
+          </Typography>
+          <TableContainer sx={{ maxHeight: 400 }}>
+            <Table stickyHeader size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>Jahr</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }} align="right">Total</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }} align="right">Pro Person/Tag</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }} align="right">vs. CH-Ø</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {tableRows.map((row, index) => (
+                  <TableRow key={index} hover>
+                    <TableCell>{row.year}</TableCell>
+                    <TableCell align="right">{row.total}</TableCell>
+                    <TableCell align="right">{row.perPerson}</TableCell>
+                    <TableCell align="right">{row.comparison}</TableCell>
+                    <TableCell>{row.status}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
 
         {/* Source Information */}
         <Alert severity="info" icon={<InfoIcon />} sx={{ mb: 2 }}>
@@ -280,7 +417,6 @@ export default function WaterPage() {
             </MuiLink>
           </Box>
         </Alert>
-      </Box>
-    </Container>
+    </Box>
   );
 }

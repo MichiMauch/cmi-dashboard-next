@@ -62,10 +62,6 @@ export default function GasPage() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Gasflaschen
-      </Typography>
-
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}

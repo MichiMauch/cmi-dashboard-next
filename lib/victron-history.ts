@@ -8,6 +8,30 @@ import { fetchWithTokenRefresh } from './victron-token';
 
 const INSTALLATION_ID = process.env.VICTRON_INSTALLATION_ID!;
 
+/**
+ * Execute fetch functions in batches with delay to avoid rate limiting
+ * @param fetchFns Array of functions that return promises
+ * @param batchSize Number of concurrent requests per batch
+ * @param delayMs Delay between batches in milliseconds
+ */
+async function fetchInBatches<T>(
+  fetchFns: (() => Promise<T>)[],
+  batchSize: number = 3,
+  delayMs: number = 300
+): Promise<T[]> {
+  const results: T[] = [];
+  for (let i = 0; i < fetchFns.length; i += batchSize) {
+    const batch = fetchFns.slice(i, i + batchSize);
+    const batchResults = await Promise.all(batch.map(fn => fn()));
+    results.push(...batchResults);
+    // Delay between batches, but not after the last one
+    if (i + batchSize < fetchFns.length && delayMs > 0) {
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  return results;
+}
+
 export interface DayStats {
   timestamp: number;
   total_solar_yield: number;
@@ -110,51 +134,51 @@ function getCurrentYearMonthlyTimestamps(): Array<{ start: number; end: number }
 export async function fetchLast7Days(): Promise<DayStats[]> {
   const timestamps = getLastNDaysTimestamps(11);
 
-  const results = await Promise.all(
-    timestamps.map(async ({ start, end }) => {
-      console.log('[fetchLast7Days] Fetching day:', new Date(start * 1000).toISOString());
+  // Create fetch functions for batching
+  const fetchFns = timestamps.map(({ start, end }) => async () => {
+    console.log('[fetchLast7Days] Fetching day:', new Date(start * 1000).toISOString());
 
-      // Use interval=days without type parameter to get daily aggregated data
-      const stats = await fetchWithTokenRefresh((token) =>
-        fetchVictronStats(INSTALLATION_ID, token, 'days', undefined, start.toString(), end.toString())
-      );
+    // Use interval=days without type parameter to get daily aggregated data
+    const stats = await fetchWithTokenRefresh((token) =>
+      fetchVictronStats(INSTALLATION_ID, token, 'days', undefined, start.toString(), end.toString())
+    );
 
-      console.log('[fetchLast7Days] Response keys:', Object.keys(stats.records));
-      console.log('[fetchLast7Days] Sample data:', {
-        total_solar_yield: stats.records.total_solar_yield,
-        total_consumption: stats.records.total_consumption,
-        Pdc: stats.records.Pdc ? `${stats.records.Pdc.length} entries` : 'missing',
-      });
+    console.log('[fetchLast7Days] Response keys:', Object.keys(stats.records));
+    console.log('[fetchLast7Days] Sample data:', {
+      total_solar_yield: stats.records.total_solar_yield,
+      total_consumption: stats.records.total_consumption,
+      Pdc: stats.records.Pdc ? `${stats.records.Pdc.length} entries` : 'missing',
+    });
 
-      const records = stats.records;
+    const records = stats.records;
 
-      // Calculate peak power for the day (max value from Pdc array)
-      let peakPower = 0;
-      if (records.Pdc && Array.isArray(records.Pdc) && records.Pdc.length > 0) {
-        peakPower = Math.max(...records.Pdc.map((item) => item[1]));
-      }
+    // Calculate peak power for the day (max value from Pdc array)
+    let peakPower = 0;
+    if (records.Pdc && Array.isArray(records.Pdc) && records.Pdc.length > 0) {
+      peakPower = Math.max(...records.Pdc.map((item) => item[1]));
+    }
 
-      // Extract aggregated values from API response (pre-calculated by Victron API)
-      // For interval=days, the API returns a single aggregated value at [0][1]
-      const totalSolarYield = records.total_solar_yield?.[0]?.[1] ?? 0;
-      const totalConsumption = records.total_consumption?.[0]?.[1] ?? 0;
-      const averagePower = records.average_power?.[0]?.[1] ?? 0;
-      const totalEnergyImported = records.total_energy_imported?.[0]?.[1] ?? 0;
-      const totalEnergyExported = records.total_energy_exported?.[0]?.[1] ?? 0;
+    // Extract aggregated values from API response (pre-calculated by Victron API)
+    // For interval=days, the API returns a single aggregated value at [0][1]
+    const totalSolarYield = records.total_solar_yield?.[0]?.[1] ?? 0;
+    const totalConsumption = records.total_consumption?.[0]?.[1] ?? 0;
+    const averagePower = records.average_power?.[0]?.[1] ?? 0;
+    const totalEnergyImported = records.total_energy_imported?.[0]?.[1] ?? 0;
+    const totalEnergyExported = records.total_energy_exported?.[0]?.[1] ?? 0;
 
-      return {
-        timestamp: start * 1000,
-        total_solar_yield: totalSolarYield,
-        total_consumption: totalConsumption,
-        average_power: averagePower,
-        peak_power: peakPower,
-        total_energy_imported: totalEnergyImported,
-        total_energy_exported: totalEnergyExported,
-      };
-    })
-  );
+    return {
+      timestamp: start * 1000,
+      total_solar_yield: totalSolarYield,
+      total_consumption: totalConsumption,
+      average_power: averagePower,
+      peak_power: peakPower,
+      total_energy_imported: totalEnergyImported,
+      total_energy_exported: totalEnergyExported,
+    };
+  });
 
-  return results;
+  // Fetch in batches of 3 with 300ms delay
+  return fetchInBatches(fetchFns, 3, 300);
 }
 
 /**
@@ -163,44 +187,44 @@ export async function fetchLast7Days(): Promise<DayStats[]> {
 export async function fetchLast24Months(): Promise<MonthStats[]> {
   const timestamps = getLastNMonthsTimestamps(24);
 
-  const results = await Promise.all(
-    timestamps.map(async ({ start, end }) => {
-      console.log('[fetchLast24Months] Fetching month:', new Date(start * 1000).toISOString());
+  // Create fetch functions for batching
+  const fetchFns = timestamps.map(({ start, end }) => async () => {
+    console.log('[fetchLast24Months] Fetching month:', new Date(start * 1000).toISOString());
 
-      // Use interval=months without type parameter to get monthly aggregated data
-      const stats = await fetchWithTokenRefresh((token) =>
-        fetchVictronStats(INSTALLATION_ID, token, 'months', undefined, start.toString(), end.toString())
-      );
+    // Use interval=months without type parameter to get monthly aggregated data
+    const stats = await fetchWithTokenRefresh((token) =>
+      fetchVictronStats(INSTALLATION_ID, token, 'months', undefined, start.toString(), end.toString())
+    );
 
-      console.log('[fetchLast24Months] Response keys:', Object.keys(stats.records));
-      console.log('[fetchLast24Months] total_solar_yield:', stats.records?.total_solar_yield);
-      console.log('[fetchLast24Months] total_consumption:', stats.records?.total_consumption);
-      console.log('[fetchLast24Months] grid_history_from:', stats.records?.grid_history_from);
+    console.log('[fetchLast24Months] Response keys:', Object.keys(stats.records));
+    console.log('[fetchLast24Months] total_solar_yield:', stats.records?.total_solar_yield);
+    console.log('[fetchLast24Months] total_consumption:', stats.records?.total_consumption);
+    console.log('[fetchLast24Months] grid_history_from:', stats.records?.grid_history_from);
 
-      const records = stats.records;
+    const records = stats.records;
 
-      // Extract aggregated values from API response (pre-calculated by Victron API)
-      // For interval=months, the API sometimes returns multiple values
-      // We take the MAXIMUM value to ensure we get the accumulated total, not a small initial value
-      // Note: API returns different tuple sizes for different intervals, so we use any to handle this
-      const totalSolarYield = records.total_solar_yield && records.total_solar_yield.length > 0
-        ? Math.max(...records.total_solar_yield.map((item: any) => item[1]))
-        : 0;
-      const totalConsumption = records.total_consumption && records.total_consumption.length > 0
-        ? Math.max(...records.total_consumption.map((item: any) => item[1]))
-        : 0;
-      const gridHistoryFrom = records.grid_history_from?.[records.grid_history_from.length - 1]?.[1] ?? 0;
+    // Extract aggregated values from API response (pre-calculated by Victron API)
+    // For interval=months, the API sometimes returns multiple values
+    // We take the MAXIMUM value to ensure we get the accumulated total, not a small initial value
+    // Note: API returns different tuple sizes for different intervals, so we use any to handle this
+    const totalSolarYield = records.total_solar_yield && records.total_solar_yield.length > 0
+      ? Math.max(...records.total_solar_yield.map((item: any) => item[1]))
+      : 0;
+    const totalConsumption = records.total_consumption && records.total_consumption.length > 0
+      ? Math.max(...records.total_consumption.map((item: any) => item[1]))
+      : 0;
+    const gridHistoryFrom = records.grid_history_from?.[records.grid_history_from.length - 1]?.[1] ?? 0;
 
-      return {
-        timestamp: start * 1000,
-        total_solar_yield: totalSolarYield,
-        total_consumption: totalConsumption,
-        grid_history_from: gridHistoryFrom,
-      };
-    })
-  );
+    return {
+      timestamp: start * 1000,
+      total_solar_yield: totalSolarYield,
+      total_consumption: totalConsumption,
+      grid_history_from: gridHistoryFrom,
+    };
+  });
 
-  return results;
+  // Fetch in batches of 4 with 300ms delay
+  return fetchInBatches(fetchFns, 4, 300);
 }
 
 /**
@@ -211,36 +235,38 @@ export async function fetchAutarkieStats(): Promise<AutarkieStats> {
 
   console.log('[fetchAutarkieStats] Fetching', timestamps.length, 'months');
 
-  const results = await Promise.all(
-    timestamps.map(async ({ start, end }) => {
-      // Use interval=months without type parameter to get monthly aggregated data
-      const stats = await fetchWithTokenRefresh((token) =>
-        fetchVictronStats(INSTALLATION_ID, token, 'months', undefined, start.toString(), end.toString())
-      );
+  // Create fetch functions for batching
+  const fetchFns = timestamps.map(({ start, end }) => async () => {
+    // Use interval=months without type parameter to get monthly aggregated data
+    const stats = await fetchWithTokenRefresh((token) =>
+      fetchVictronStats(INSTALLATION_ID, token, 'months', undefined, start.toString(), end.toString())
+    );
 
-      console.log('[fetchAutarkieStats] Month response keys:', Object.keys(stats.records));
+    console.log('[fetchAutarkieStats] Month response keys:', Object.keys(stats.records));
 
-      const records = stats.records;
+    const records = stats.records;
 
-      // Extract aggregated values from API response (pre-calculated by Victron API)
-      // For interval=months, the API returns a single aggregated value at [0][1]
-      const monthSolarYield = records.total_solar_yield?.[0]?.[1] ?? 0;
-      const monthConsumption = records.total_consumption?.[0]?.[1] ?? 0;
-      const monthGridHistoryFrom = records.grid_history_from?.[0]?.[1] ?? 0;
+    // Extract aggregated values from API response (pre-calculated by Victron API)
+    // For interval=months, the API returns a single aggregated value at [0][1]
+    const monthSolarYield = records.total_solar_yield?.[0]?.[1] ?? 0;
+    const monthConsumption = records.total_consumption?.[0]?.[1] ?? 0;
+    const monthGridHistoryFrom = records.grid_history_from?.[0]?.[1] ?? 0;
 
-      console.log('[fetchAutarkieStats] Month data:', {
-        solar_yield: monthSolarYield,
-        consumption: monthConsumption,
-        grid_from: monthGridHistoryFrom,
-      });
+    console.log('[fetchAutarkieStats] Month data:', {
+      solar_yield: monthSolarYield,
+      consumption: monthConsumption,
+      grid_from: monthGridHistoryFrom,
+    });
 
-      return {
-        solar_yield: monthSolarYield,
-        consumption: monthConsumption,
-        grid_from: monthGridHistoryFrom,
-      };
-    })
-  );
+    return {
+      solar_yield: monthSolarYield,
+      consumption: monthConsumption,
+      grid_from: monthGridHistoryFrom,
+    };
+  });
+
+  // Fetch in batches of 4 with 300ms delay
+  const results = await fetchInBatches(fetchFns, 4, 300);
 
   // Sum up monthly results
   let totalSolarYield = 0;
@@ -282,35 +308,35 @@ export async function fetchLast30DaysPeakPower(): Promise<PeakPowerHistoryStats[
 
   console.log('[fetchLast30DaysPeakPower] Fetching peak power for 30 days');
 
-  const results = await Promise.all(
-    timestamps.map(async ({ start, end }) => {
-      const stats = await fetchWithTokenRefresh((token) =>
-        fetchVictronStats(INSTALLATION_ID, token, '15mins', undefined, start.toString(), end.toString())
-      );
+  // Create fetch functions for batching
+  const fetchFns = timestamps.map(({ start, end }) => async () => {
+    const stats = await fetchWithTokenRefresh((token) =>
+      fetchVictronStats(INSTALLATION_ID, token, '15mins', undefined, start.toString(), end.toString())
+    );
 
-      const records = stats.records;
+    const records = stats.records;
 
-      // Find the highest Pdc (solar power) value for the day
-      if (!records.Pdc || !Array.isArray(records.Pdc) || records.Pdc.length === 0) {
-        return {
-          timestamp: start * 1000, // Convert to milliseconds
-          peak_power: 0,
-        };
-      }
-
-      const peakPowerEntry = records.Pdc.reduce(
-        (max, entry) => (entry[1] > max[1] ? entry : max),
-        [0, 0]
-      );
-
+    // Find the highest Pdc (solar power) value for the day
+    if (!records.Pdc || !Array.isArray(records.Pdc) || records.Pdc.length === 0) {
       return {
-        timestamp: start * 1000, // Use day start timestamp, not peak entry time
-        peak_power: peakPowerEntry[1],
+        timestamp: start * 1000, // Convert to milliseconds
+        peak_power: 0,
       };
-    })
-  );
+    }
 
-  return results;
+    const peakPowerEntry = records.Pdc.reduce(
+      (max, entry) => (entry[1] > max[1] ? entry : max),
+      [0, 0]
+    );
+
+    return {
+      timestamp: start * 1000, // Use day start timestamp, not peak entry time
+      peak_power: peakPowerEntry[1],
+    };
+  });
+
+  // Fetch in batches of 5 with 300ms delay
+  return fetchInBatches(fetchFns, 5, 300);
 }
 
 /**
@@ -327,33 +353,33 @@ export async function fetchLast5YearsGridImport(): Promise<YearGridImportStats[]
 
   console.log('[fetchLast5YearsGridImport] Fetching years:', years);
 
-  const results = await Promise.all(
-    years.map(async (year) => {
-      const start = new Date(year, 0, 1).getTime() / 1000; // Jan 1st
-      const end = new Date(year, 11, 31, 23, 59, 59, 999).getTime() / 1000; // Dec 31st
+  // Create fetch functions for batching
+  const fetchFns = years.map((year) => async () => {
+    const start = new Date(year, 0, 1).getTime() / 1000; // Jan 1st
+    const end = new Date(year, 11, 31, 23, 59, 59, 999).getTime() / 1000; // Dec 31st
 
-      console.log(`[fetchLast5YearsGridImport] Fetching year ${year}:`, new Date(start * 1000).toISOString());
+    console.log(`[fetchLast5YearsGridImport] Fetching year ${year}:`, new Date(start * 1000).toISOString());
 
-      const stats = await fetchWithTokenRefresh((token) =>
-        fetchVictronStats(INSTALLATION_ID, token, 'months', undefined, start.toString(), end.toString())
-      );
+    const stats = await fetchWithTokenRefresh((token) =>
+      fetchVictronStats(INSTALLATION_ID, token, 'months', undefined, start.toString(), end.toString())
+    );
 
-      const records = stats.records;
+    const records = stats.records;
 
-      // Sum all grid_history_from values for the year
-      let yearlyGridImport = 0;
-      if (records.grid_history_from && Array.isArray(records.grid_history_from)) {
-        yearlyGridImport = records.grid_history_from.reduce((sum, item) => sum + (item[1] || 0), 0);
-      }
+    // Sum all grid_history_from values for the year
+    let yearlyGridImport = 0;
+    if (records.grid_history_from && Array.isArray(records.grid_history_from)) {
+      yearlyGridImport = records.grid_history_from.reduce((sum, item) => sum + (item[1] || 0), 0);
+    }
 
-      console.log(`[fetchLast5YearsGridImport] Year ${year} grid import:`, yearlyGridImport);
+    console.log(`[fetchLast5YearsGridImport] Year ${year} grid import:`, yearlyGridImport);
 
-      return {
-        year: year.toString(),
-        gridImport: yearlyGridImport,
-      };
-    })
-  );
+    return {
+      year: year.toString(),
+      gridImport: yearlyGridImport,
+    };
+  });
 
-  return results;
+  // Fetch in batches of 2 with 300ms delay (only 5 requests, so small batches)
+  return fetchInBatches(fetchFns, 2, 300);
 }
