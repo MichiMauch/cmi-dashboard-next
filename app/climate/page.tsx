@@ -8,7 +8,7 @@ import { Box, Typography, Paper, Alert } from '@mui/material';
 import Link from 'next/link';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
 import WaterDropIcon from '@mui/icons-material/WaterDrop';
-import { fetchShellySensors, getShellyDeviceIds, ShellySensorData, saveAllReadings } from '@/lib/shelly';
+import { getLatestReadingsFromDB, getShellyDeviceIds, ShellySensorData } from '@/lib/shelly';
 import { getRoomByDeviceId } from '@/lib/shelly-config';
 import { FloorplanImage } from '@/components/climate/floorplan-image';
 import { FloorplanMarker } from '@/components/climate/floorplan-marker';
@@ -22,12 +22,12 @@ async function getClimateData(): Promise<{ sensors: ShellySensorData[] } | { err
     if (deviceIds.length === 0) {
       return { error: 'Keine Shelly Sensoren konfiguriert' };
     }
-    const sensors = await fetchShellySensors(deviceIds);
+    // Use cached data from MongoDB to avoid Shelly API rate limits
+    const sensors = await getLatestReadingsFromDB(deviceIds);
 
-    // Save readings to MongoDB (non-blocking, ignore errors)
-    saveAllReadings(sensors).catch((err) => {
-      console.error('[Climate Page] Error saving readings:', err);
-    });
+    if (sensors.length === 0) {
+      return { error: 'Keine Sensordaten in der Datenbank. Bitte warten bis Daten gesammelt wurden.' };
+    }
 
     return { sensors };
   } catch (error) {

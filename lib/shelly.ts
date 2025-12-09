@@ -231,6 +231,40 @@ export async function getHistoricalReadings(
 }
 
 /**
+ * Get the latest reading for each device from MongoDB
+ * This avoids hitting the Shelly Cloud API rate limits
+ */
+export async function getLatestReadingsFromDB(
+  deviceIds: string[]
+): Promise<ShellySensorData[]> {
+  await dbConnect();
+
+  const results: ShellySensorData[] = [];
+
+  for (const deviceId of deviceIds) {
+    const latest = await ShellyReading.findOne({ deviceId })
+      .sort({ timestamp: -1 })
+      .lean();
+
+    if (latest) {
+      results.push({
+        id: deviceId,
+        name: null, // Name kommt aus der Config
+        online: true, // Annahme: wenn wir Daten haben, war der Sensor online
+        temperature: latest.temperature,
+        humidity: latest.humidity,
+        battery: latest.battery || 0,
+        batteryVoltage: 0, // Nicht in DB gespeichert
+        lastUpdate: latest.timestamp.toISOString(),
+        wifiSignal: 0, // Nicht in DB gespeichert
+      });
+    }
+  }
+
+  return results;
+}
+
+/**
  * Get aggregated readings (daily averages for month/year views)
  */
 export async function getAggregatedReadings(

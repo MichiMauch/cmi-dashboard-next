@@ -3,12 +3,9 @@
  * Displays temperature and humidity data for a specific room's sensor
  */
 
-import { Box, Typography, Paper, Alert, Chip } from '@mui/material';
+import { Box, Typography, Paper, Alert } from '@mui/material';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
 import WaterDropIcon from '@mui/icons-material/WaterDrop';
-import BatteryFullIcon from '@mui/icons-material/BatteryFull';
-import BatteryAlertIcon from '@mui/icons-material/BatteryAlert';
-import SignalWifi4BarIcon from '@mui/icons-material/SignalWifi4Bar';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import KitchenIcon from '@mui/icons-material/Kitchen';
 import BathtubIcon from '@mui/icons-material/Bathtub';
@@ -16,17 +13,17 @@ import ComputerIcon from '@mui/icons-material/Computer';
 import HotelIcon from '@mui/icons-material/Hotel';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import { notFound } from 'next/navigation';
-import { fetchShellySensors, ShellySensorData } from '@/lib/shelly';
+import { getLatestReadingsFromDB, ShellySensorData } from '@/lib/shelly';
 import { getRoomBySlug, isRoomConfigured, SHELLY_ROOMS, ShellyRoom } from '@/lib/shelly-config';
 import { ClimateHistory } from '@/components/climate/climate-history';
 
 export const revalidate = 300;
 
-// Format datetime from Shelly format to local display
+// Format datetime to local display
 function formatDateTime(dateStr: string): string {
   if (!dateStr) return '';
-  const utcDate = new Date(dateStr.replace(' ', 'T') + 'Z');
-  return utcDate.toLocaleDateString('de-CH', {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('de-CH', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -65,9 +62,10 @@ async function getRoomData(
   deviceId: string
 ): Promise<{ sensor: ShellySensorData } | { error: string }> {
   try {
-    const sensors = await fetchShellySensors([deviceId]);
+    // Use cached data from MongoDB to avoid Shelly API rate limits
+    const sensors = await getLatestReadingsFromDB([deviceId]);
     if (sensors.length === 0) {
-      return { error: 'Keine Daten vom Sensor' };
+      return { error: 'Keine Sensordaten in der Datenbank. Bitte warten bis Daten gesammelt wurden.' };
     }
     return { sensor: sensors[0] };
   } catch (error) {
@@ -136,10 +134,10 @@ export default async function RoomPage({ params }: RoomPageProps) {
 
   return (
     <Box>
-        {/* Header with Room Name and Status */}
+        {/* Header with Room Name */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
           <RoomIcon icon={room.icon} />
-          <Box sx={{ flexGrow: 1 }}>
+          <Box>
             <Typography variant="h4" sx={{ fontWeight: 700 }}>
               {room.name}
             </Typography>
@@ -147,11 +145,6 @@ export default async function RoomPage({ params }: RoomPageProps) {
               Temperatur und Luftfeuchtigkeit
             </Typography>
           </Box>
-          <Chip
-            label={sensor.online ? 'Online' : 'Offline'}
-            color={sensor.online ? 'success' : 'error'}
-            size="medium"
-          />
         </Box>
 
         {/* Current Values */}
@@ -216,67 +209,13 @@ export default async function RoomPage({ params }: RoomPageProps) {
           </Paper>
         </Box>
 
-        {/* Sensor Details */}
-        <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-            Sensor Details
+        {/* Last Update */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 4 }}>
+          <AccessTimeIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
+          <Typography variant="body2" color="text.secondary">
+            Letzte Aktualisierung: {formatDateTime(sensor.lastUpdate)}
           </Typography>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' },
-              gap: 3,
-            }}
-          >
-            {/* Battery */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              {sensor.battery > 20 ? (
-                <BatteryFullIcon sx={{ fontSize: 32, color: 'success.main' }} />
-              ) : (
-                <BatteryAlertIcon sx={{ fontSize: 32, color: 'warning.main' }} />
-              )}
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1 }}>
-                  {sensor.battery}%
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Batterie
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* WiFi Signal */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <SignalWifi4BarIcon
-                sx={{
-                  fontSize: 32,
-                  color: sensor.wifiSignal > -70 ? 'success.main' : sensor.wifiSignal > -80 ? 'warning.main' : 'error.main',
-                }}
-              />
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1 }}>
-                  {sensor.wifiSignal} dBm
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  WiFi Signal
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* Last Update */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <AccessTimeIcon sx={{ fontSize: 32, color: 'primary.main' }} />
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1 }}>
-                  {formatDateTime(sensor.lastUpdate)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Letzte Aktualisierung
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-        </Paper>
+        </Box>
 
         {/* History Chart */}
         <ClimateHistory deviceId={room.deviceId} roomName={room.name} />
