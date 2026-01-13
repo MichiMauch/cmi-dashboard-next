@@ -32,6 +32,7 @@ function formatTime(timestamp: number): string {
   return new Date(timestamp * 1000).toLocaleTimeString('de-DE', {
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'Europe/Zurich',
   });
 }
 

@@ -94,6 +94,7 @@ export async function fetchWeatherData(): Promise<ProcessedWeatherData> {
       time: new Date(item.dt * 1000).toLocaleTimeString('de-DE', {
         hour: '2-digit',
         minute: '2-digit',
+        timeZone: 'Europe/Zurich',
       }),
       timestamp: item.dt,
       temp: Math.round(item.main.temp),

@@ -162,6 +162,7 @@ export async function saveReadingIfNew(sensor: ShellySensorData): Promise<boolea
           temperature: sensor.temperature,
           humidity: sensor.humidity,
           battery: sensor.battery,
+          wifiSignal: sensor.wifiSignal,
         },
       },
       { upsert: true }
@@ -256,7 +257,7 @@ export async function getLatestReadingsFromDB(
         battery: latest.battery || 0,
         batteryVoltage: 0, // Nicht in DB gespeichert
         lastUpdate: latest.timestamp.toISOString(),
-        wifiSignal: 0, // Nicht in DB gespeichert
+        wifiSignal: latest.wifiSignal || 0,
       });
     }
   }

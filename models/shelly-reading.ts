@@ -11,6 +11,7 @@ export interface IShellyReading {
   temperature: number;
   humidity: number;
   battery: number;
+  wifiSignal?: number;
 }
 
 const shellyReadingSchema = new Schema<IShellyReading>({
@@ -34,6 +35,10 @@ const shellyReadingSchema = new Schema<IShellyReading>({
   battery: {
     type: Number,
     required: true,
+  },
+  wifiSignal: {
+    type: Number,
+    required: false,
   },
 });
 
