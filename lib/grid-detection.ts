@@ -129,9 +129,10 @@ export function detectFromGridPeriods(date: Date = new Date()): GridStatus {
  * Main grid detection function - cascades through all detection layers
  *
  * Priority:
- * 1. Pg field (real-time grid power measurement)
- * 2. grid_history_from (cumulative grid consumption)
- * 3. grid-periods.json (manual override)
+ * 1. grid-periods.json (manual override for physical disconnection - "autark" only)
+ * 2. Pg field (real-time grid power measurement)
+ * 3. grid-periods.json (fallback for "grid_consuming")
+ * 4. grid_history_from (cumulative grid consumption - last resort)
  *
  * @param pgValue - Current grid power in Watts
  * @param gridHistoryData - Array of grid history data points
@@ -143,22 +144,33 @@ export function detectGridStatus(
 ): GridStatus {
   console.log('[detectGridStatus] Starting detection cascade...');
 
-  // Layer 1: Try Pg field first (most reliable)
+  // Layer 1: Check grid-periods.json FIRST as override for physical disconnection
+  const periodsResult = detectFromGridPeriods();
+  if (periodsResult === 'autark') {
+    console.log(`[detectGridStatus] Result from Layer 1 (grid-periods.json): ${periodsResult}`);
+    return periodsResult;
+  }
+
+  // Layer 2: Try Pg field (real-time, most reliable when available)
   const pgResult = detectFromPgField(pgValue);
   if (pgResult !== null) {
-    console.log(`[detectGridStatus] Result from Layer 1 (Pg): ${pgResult}`);
+    console.log(`[detectGridStatus] Result from Layer 2 (Pg): ${pgResult}`);
     return pgResult;
   }
 
-  // Layer 2: Try grid history
+  // Layer 3: If grid-periods says we're connected, trust it
+  if (periodsResult === 'grid_consuming') {
+    console.log(`[detectGridStatus] Result from Layer 3 (grid-periods.json): ${periodsResult}`);
+    return periodsResult;
+  }
+
+  // Layer 4: Try grid history as last resort
   const historyResult = detectFromGridHistory(gridHistoryData);
   if (historyResult !== null) {
-    console.log(`[detectGridStatus] Result from Layer 2 (grid_history): ${historyResult}`);
+    console.log(`[detectGridStatus] Result from Layer 4 (grid_history): ${historyResult}`);
     return historyResult;
   }
 
-  // Layer 3: Use manual grid periods as final fallback
-  const periodsResult = detectFromGridPeriods();
-  console.log(`[detectGridStatus] Result from Layer 3 (grid-periods.json): ${periodsResult}`);
-  return periodsResult;
+  console.log('[detectGridStatus] No detection method succeeded, returning unknown');
+  return 'unknown';
 }
