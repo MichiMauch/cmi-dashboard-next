@@ -3,6 +3,9 @@
  * Based on Victron VRM API v2 responses
  */
 
+// Grid connection status
+export type GridStatus = 'autark' | 'grid_consuming' | 'grid_feeding' | 'unknown';
+
 // Live feed data point: [timestamp, value, unit, formattedValue]
 export type DataPoint = [number, number, number, number];
 
@@ -83,6 +86,7 @@ export interface SolarData {
   batteryCharge: number; // Battery charge percentage
   batteryPower: number; // Battery power (W, positive = charging)
   gridPower: number; // Grid power (W, positive = consuming)
+  gridStatus: GridStatus; // Detailed grid connection status
   consumption: number; // Current consumption (W)
   todayYield: number; // Today's solar yield (kWh)
   todayConsumption: number; // Today's consumption (kWh)

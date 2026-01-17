@@ -9,6 +9,7 @@ import {
   VictronLoginRequest,
   SolarData,
 } from '@/types/victron';
+import { detectGridStatus } from './grid-detection';
 
 const VRM_API_BASE = 'https://vrmapi.victronenergy.com/v2';
 
@@ -124,68 +125,25 @@ export function processSolarData(stats: VictronStatsResponse): SolarData {
     return sum;
   };
 
-  /**
-   * Detect if currently using grid power by analyzing multiple indicators
-   */
-  const isUsingGridPower = (): boolean => {
-    const gridData = records.grid_history_from;
-    const solarPower = getLatestValue(records.Pdc);
-    const batteryCharge = getLatestValue(records.bs);
-    const consumption = getTodaySum(records.total_consumption);
+  // Get Pg (grid power) value for detection
+  const pgValue = getLatestValue(records.Pg);
+  const hasPgData = records.Pg && records.Pg.length > 0;
 
-    // Log grid_history_from for debugging
-    if (gridData && Array.isArray(gridData) && gridData.length >= 3) {
-      const recentPoints = gridData.slice(-10);
-      const firstValue = recentPoints[0][1] || 0;
-      const lastValue = recentPoints[recentPoints.length - 1][1] || 0;
-      const previousValue = recentPoints[recentPoints.length - 2][1] || 0;
+  // Use new 3-layer grid detection
+  const gridStatus = detectGridStatus(
+    hasPgData ? pgValue : undefined,
+    records.grid_history_from
+  );
 
-      console.log('[isUsingGridPower] grid_history_from:', {
-        first: firstValue.toFixed(6),
-        previous: previousValue.toFixed(6),
-        last: lastValue.toFixed(6),
-        recentDiff: (lastValue - previousValue).toFixed(6),
-        overallDiff: (lastValue - firstValue).toFixed(6)
-      });
-
-      // Check if value increased in last interval (ANY increase)
-      const recentIncrease = lastValue > previousValue;
-      // Check if value increased over recent period
-      const overallIncrease = lastValue > firstValue;
-
-      if (recentIncrease || overallIncrease) {
-        console.log('[isUsingGridPower] ON GRID (grid_history_from increasing)');
-        return true;
-      }
-    }
-
-    // Method 2: Logic based approach
-    // If solar is very low (<100W) and there's consumption, power must come from battery or grid
-    // If battery is not very high, assume grid is being used
-    if (solarPower < 100 && consumption > 0 && batteryCharge < 80) {
-      console.log('[isUsingGridPower] ON GRID (low solar + consumption + battery not full) -', {
-        battery: batteryCharge + '%',
-        solar: solarPower.toFixed(1) + 'W',
-        consumption: consumption.toFixed(2) + 'kWh'
-      });
-      return true;
-    }
-
-    console.log('[isUsingGridPower] AUTARK -', {
-      battery: batteryCharge + '%',
-      solar: solarPower.toFixed(1) + 'W'
-    });
-    return false;
-  };
-
-  // Detect grid usage
-  const usingGrid = isUsingGridPower();
+  // gridPower: 1 if consuming from grid, 0 otherwise (for backwards compatibility)
+  const isUsingGrid = gridStatus === 'grid_consuming';
 
   const processedData = {
     currentPower: getLatestValue(records.Pdc), // Solar power
     batteryCharge: getLatestValue(records.bs), // Battery %
     batteryPower: getLatestValue(records.Pb), // Battery power (not available)
-    gridPower: usingGrid ? 1 : 0, // Use grid detection instead of Pg field
+    gridPower: isUsingGrid ? 1 : 0, // Backwards compatible: 1 = on grid, 0 = autark
+    gridStatus, // New detailed status
     consumption: getLatestValue(records.Pac), // AC consumption (not available)
     todayYield: getTodaySum(records.total_solar_yield), // Sum all today's values
     todayConsumption: getTodaySum(records.total_consumption), // Sum all today's values

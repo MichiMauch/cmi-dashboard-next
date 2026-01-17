@@ -9,9 +9,11 @@ import React, { useState, useEffect } from 'react';
 import { Chip, Skeleton } from '@mui/material';
 import PowerIcon from '@mui/icons-material/Power';
 import BoltIcon from '@mui/icons-material/Bolt';
+import ElectricBoltIcon from '@mui/icons-material/ElectricBolt';
+import { GridStatus } from '@/types/victron';
 
 interface SolarStatus {
-  isOnGrid: boolean;
+  gridStatus: GridStatus;
 }
 
 export function SolarStatusChip() {
@@ -24,9 +26,9 @@ export function SolarStatusChip() {
         const response = await fetch('/api/victron/stats?interval=15mins', { cache: 'no-store' });
         if (response.ok) {
           const data = await response.json();
-          // gridPower > 0 means using grid power
-          const gridPower = data.processed?.gridPower || 0;
-          setStatus({ isOnGrid: gridPower > 0 });
+          // Use new gridStatus field
+          const gridStatus: GridStatus = data.processed?.gridStatus || 'unknown';
+          setStatus({ gridStatus });
         }
       } catch (error) {
         console.error('Error fetching solar status:', error);
@@ -49,11 +51,43 @@ export function SolarStatusChip() {
     return null;
   }
 
+  // Determine display based on gridStatus
+  const getChipProps = () => {
+    switch (status.gridStatus) {
+      case 'grid_consuming':
+        return {
+          icon: <PowerIcon />,
+          label: 'Netzstrom',
+          color: 'warning' as const
+        };
+      case 'grid_feeding':
+        return {
+          icon: <ElectricBoltIcon />,
+          label: 'Einspeisung',
+          color: 'info' as const
+        };
+      case 'autark':
+        return {
+          icon: <BoltIcon />,
+          label: 'Autark',
+          color: 'success' as const
+        };
+      default:
+        return {
+          icon: <BoltIcon />,
+          label: 'Autark',
+          color: 'success' as const
+        };
+    }
+  };
+
+  const chipProps = getChipProps();
+
   return (
     <Chip
-      icon={status.isOnGrid ? <PowerIcon /> : <BoltIcon />}
-      label={status.isOnGrid ? 'Netzstrom' : 'Autark'}
-      color={status.isOnGrid ? 'warning' : 'success'}
+      icon={chipProps.icon}
+      label={chipProps.label}
+      color={chipProps.color}
       size="small"
       sx={{ fontWeight: 600 }}
     />
