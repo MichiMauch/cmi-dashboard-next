@@ -226,6 +226,9 @@ export default async function SolarPage() {
     };
   }).reverse(); // Newest first
 
+  const totalGridDays = gridPeriods.reduce((sum, period) => {
+    return sum + calculateDays(period.gridOn, period.gridOff);
+  }, 0);
 
   // Calculate peak power for today
   const todayPeak = peakPowerHistory[0]?.peak_power || 0;
@@ -458,6 +461,16 @@ export default async function SolarPage() {
                       <TableCell>{row.status}</TableCell>
                     </TableRow>
                   ))}
+                  {/* Summary Row */}
+                  <TableRow sx={{ bgcolor: 'action.hover' }}>
+                    <TableCell colSpan={2} sx={{ fontWeight: 600 }}>
+                      Gesamt ({gridPeriodsRows.length} Perioden)
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>
+                      {totalGridDays} Tage
+                    </TableCell>
+                    <TableCell />
+                  </TableRow>
                 </TableBody>
               </Table>
             </TableContainer>
