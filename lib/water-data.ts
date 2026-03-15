@@ -53,6 +53,11 @@ export const yearlyConsumption: YearlyConsumption[] = [
     consumption: 24,
     isComplete: true,
   },
+  {
+    year: '2025',
+    consumption: 20,
+    isComplete: true,
+  },
 ];
 
 /**
@@ -107,7 +112,7 @@ export function getYourUsageBreakdown(dailyLitersPerPerson: number): WaterUsageB
  * Get statistics for the most recent complete year
  */
 export function getCurrentYearStats() {
-  const currentYear = yearlyConsumption.find((y) => y.year === '2024' && y.isComplete);
+  const currentYear = yearlyConsumption.filter((y) => y.isComplete).at(-1);
   if (!currentYear) return null;
 
   const dailyPerPerson = getDailyConsumptionPerPerson(currentYear.consumption);
