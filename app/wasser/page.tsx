@@ -96,7 +96,7 @@ export default function WaterPage() {
                 </Typography>
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                Verbrauch 2024
+                Verbrauch {currentStats.year}
               </Typography>
             </Box>
           </Paper>
@@ -316,7 +316,7 @@ export default function WaterPage() {
               </li>
               <li>
                 <Typography variant="body2">
-                  <strong>Trend 2023-2024:</strong> Stabil bei ~24-25 m³ pro Jahr
+                  <strong>Trend 2023-2025:</strong> Sinkend von 25 auf 20 m³ pro Jahr
                 </Typography>
               </li>
             </Box>
